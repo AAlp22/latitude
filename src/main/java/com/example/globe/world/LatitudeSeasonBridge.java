@@ -204,6 +204,28 @@ public final class LatitudeSeasonBridge {
     }
 
     /**
+     * Scales only the visible daytime sky after vanilla has applied biome,
+     * rain, thunder, and lightning colors. Diffuse sky radiance falls more
+     * gently than direct ground irradiance, so this is intentionally separate
+     * from gameplaySkyLightFactor and the stored sky-light map.
+     */
+    public static double visualSkyColorFactor(World world, double x, double z) {
+        if (!isLatitudeWorld(world)) {
+            return 1.0;
+        }
+
+        LatitudeCalendarMath.SolarPosition solar = at(world, x, z).solar();
+        double elevationDegrees = Math.toDegrees(solar.solarElevationRadians());
+        if (elevationDegrees <= -6.0) {
+            return 1.0;
+        }
+
+        double directSunFactor = Math.max(0.0, Math.min(1.0,
+                (Math.sin(solar.solarElevationRadians()) + 0.08) / 1.08));
+        return Math.max(0.0, Math.min(1.0, Math.pow(directSunFactor, 0.75)));
+    }
+
+    /**
      * Gameplay sky light stays full while the Sun is above the horizon. The
      * renderer may still use the continuous physical factor, but Minecraft's
      * discrete sky-light level must not turn ordinary morning into level 5.
