@@ -8,6 +8,7 @@
     "MinecraftServerInitialSpawnMixin",
     "ServerPlayNetworkHandlerLatitudeTopologyMixin",
     "BiomeSourceAccessor",
+    "ChunkGeneratorBiomeSourceAccessor",
     "ChunkGeneratorBiomeSourceMixin",
     "WorldViewLatitudeContextMixin",
     "BlockRenderViewLatitudeLightMixin",

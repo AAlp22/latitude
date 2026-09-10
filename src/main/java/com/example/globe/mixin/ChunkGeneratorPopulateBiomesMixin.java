@@ -15,9 +15,7 @@ import net.minecraft.world.gen.chunk.ChunkGeneratorSettings;
 import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
 import net.minecraft.world.gen.noise.NoiseConfig;
 import net.minecraft.world.chunk.Chunk;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -37,11 +35,6 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
             RegistryKey.of(RegistryKeys.CHUNK_GENERATOR_SETTINGS, Identifier.of("globe", "overworld_massive"));
 
     @Shadow
-    @Final
-    @Mutable
-    private BiomeSource biomeSource;
-
-    @Shadow
     public abstract boolean matchesSettings(RegistryKey<ChunkGeneratorSettings> settings);
 
     @Inject(
@@ -51,7 +44,9 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
     private void globe$installAuthoritativeBiomeSource(Blender blender, NoiseConfig noiseConfig,
                                                         StructureAccessor structureAccessor, Chunk chunk,
                                                         CallbackInfo ci) {
-        if (this.biomeSource instanceof LatitudeBiomeSource || !globe$isLatitudeSettings()) {
+        ChunkGeneratorBiomeSourceAccessor sourceAccessor = (ChunkGeneratorBiomeSourceAccessor) (Object) this;
+        BiomeSource current = sourceAccessor.globe$getBiomeSource();
+        if (current instanceof LatitudeBiomeSource || !globe$isLatitudeSettings()) {
             return;
         }
 
@@ -60,11 +55,11 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
             LatitudeBiomes.setActiveBiomeRegistry(registry);
         }
 
-        BiomeSource original = this.biomeSource;
-        this.biomeSource = new LatitudeBiomeSource(
+        BiomeSource original = current;
+        sourceAccessor.globe$setBiomeSource(new LatitudeBiomeSource(
                 original,
                 original::getBiomes,
-                globe$borderRadiusBlocks());
+                globe$borderRadiusBlocks()));
         if (Boolean.getBoolean("latitude.debugWorldgenPath")) {
             GlobeMod.LOGGER.info("[Latitude] installed one authoritative biome source before vanilla biome population");
         }
