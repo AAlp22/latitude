@@ -96,19 +96,6 @@ public abstract class ChunkGeneratorBiomeSourceMixin {
         globe$installWrappedFieldIfSafe();
     }
 
-    @Inject(method = "getBiomeSource", at = @At("HEAD"), cancellable = true)
-    private void globe$returnWrappedBiomeSource(CallbackInfoReturnable<BiomeSource> cir) {
-        globe$maybeWrapBiomeSource();
-        globe$installWrappedFieldIfSafe();
-        BiomeSource authoritative = this.biomeSource instanceof LatitudeBiomeSource
-                ? this.biomeSource
-                : this.globe$wrappedBiomeSource;
-        if (authoritative != null && globe$canExposeWrappedBiomeSource()) {
-            cir.setReturnValue(authoritative);
-            cir.cancel();
-        }
-    }
-
     /**
      * Biolith assigns the dimension type through ChunkGenerator.getBiomeSource() from
      * DimensionOptions' constructor. Keep returning the original MultiNoise source until

@@ -18,4 +18,22 @@ class WorldgenMixinContractTest {
         assertTrue(source.contains("ChunkGeneratorBiomeSourceAccessor"));
         assertFalse(source.contains("private BiomeSource biomeSource;"));
     }
+
+    @Test
+    void latitudeSourceKeepsTheRegisteredConcreteCodec() throws IOException {
+        Path sourcePath = Path.of("src/main/java/com/example/globe/world/LatitudeBiomeSource.java");
+        String source = Files.readString(sourcePath);
+
+        assertTrue(source.contains("return delegate;"));
+        assertFalse(source.contains("delegate.xmap("));
+    }
+
+    @Test
+    void generatorGetterDoesNotInstallWrapperDuringSettingsSerialization() throws IOException {
+        Path sourcePath = Path.of("src/main/java/com/example/globe/mixin/ChunkGeneratorBiomeSourceMixin.java");
+        String source = Files.readString(sourcePath);
+
+        assertFalse(source.contains("method = \"getBiomeSource\""));
+        assertFalse(source.contains("globe$returnWrappedBiomeSource"));
+    }
 }

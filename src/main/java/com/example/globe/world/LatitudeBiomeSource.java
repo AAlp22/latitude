@@ -30,6 +30,8 @@ public final class LatitudeBiomeSource extends BiomeSource {
     protected Codec<? extends BiomeSource> getCodec() {
         @SuppressWarnings("unchecked")
         Codec<? extends BiomeSource> delegate = ((BiomeSourceAccessor) original).globe$invokeGetCodec();
+        // Keep the registered concrete codec. The wrapper is never serialized as a
+        // standalone biome-source type; it is installed only after generator settings load.
         return delegate;
     }
 
