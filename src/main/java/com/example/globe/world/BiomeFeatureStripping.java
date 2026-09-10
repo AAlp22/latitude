@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.biome.v1.BiomeModificationContext;
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.ModificationPhase;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.biome.BiomeKeys;
@@ -20,6 +21,9 @@ import net.minecraft.world.gen.feature.PlacedFeature;
 public final class BiomeFeatureStripping {
     private static final Logger LOGGER = LoggerFactory.getLogger("globe");
     private static final Identifier STRIP_FROZEN_RIVER_ID = Identifier.of("globe", "strip_frozen_river_vegetal");
+    private static final Identifier STRIP_PLAINS_WARM_OCEAN_ID = Identifier.of("globe", "strip_plains_warm_ocean_vegetation");
+    private static final RegistryKey<PlacedFeature> WARM_OCEAN_VEGETATION =
+            RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.of("minecraft", "warm_ocean_vegetation"));
 
     private BiomeFeatureStripping() {
     }
@@ -29,10 +33,22 @@ public final class BiomeFeatureStripping {
             LOGGER.info("[Latitude] Biome feature stripping disabled by system property.");
             return;
         }
+        BiomeModifications.create(STRIP_PLAINS_WARM_OCEAN_ID)
+                .add(ModificationPhase.REMOVALS,
+                        ctx -> ctx.getBiomeKey().equals(BiomeKeys.PLAINS)
+                                || ctx.getBiomeKey().equals(BiomeKeys.SUNFLOWER_PLAINS),
+                        BiomeFeatureStripping::stripPlainsWarmOceanVegetation);
         BiomeModifications.create(STRIP_FROZEN_RIVER_ID)
                 .add(ModificationPhase.REMOVALS,
                         ctx -> ctx.getBiomeKey().equals(BiomeKeys.FROZEN_RIVER),
                         BiomeFeatureStripping::stripFrozenRiverVegetation);
+    }
+
+    private static void stripPlainsWarmOceanVegetation(BiomeModificationContext ctx) {
+        boolean removed = ctx.getGenerationSettings().removeFeature(
+                GenerationStep.Feature.VEGETAL_DECORATION, WARM_OCEAN_VEGETATION);
+        LOGGER.info("[Latitude] Plains warm-ocean vegetation removal removed={} feature={}",
+                removed, WARM_OCEAN_VEGETATION.getValue());
     }
 
     private static void stripFrozenRiverVegetation(BiomeModificationContext ctx) {
