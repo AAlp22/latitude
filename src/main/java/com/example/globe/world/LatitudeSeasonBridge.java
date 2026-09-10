@@ -254,30 +254,7 @@ public final class LatitudeSeasonBridge {
         }
 
         Snapshot snapshot = at(world, x, z);
-        LatitudeCalendarMath.SolarPosition solar = snapshot.solar();
-        double localDayProgress = solar.localDayProgress();
-        double daylight = solar.daylightFraction();
-        double vanillaProgress;
-
-        if (solar.polarDay()) {
-            vanillaProgress = 0.25;
-        } else if (solar.polarNight()) {
-            vanillaProgress = 0.75;
-        } else {
-            double sunrise = 0.25 - daylight * 0.5;
-            double sunset = 0.25 + daylight * 0.5;
-            if (localDayProgress >= sunrise && localDayProgress < sunset) {
-                double localDay = (localDayProgress - sunrise) / daylight;
-                vanillaProgress = localDay * 0.5;
-            } else {
-                double nightLength = 1.0 - daylight;
-                double localNight = localDayProgress < sunrise
-                        ? (localDayProgress + 1.0 - sunset) / nightLength
-                        : (localDayProgress - sunset) / nightLength;
-                vanillaProgress = 0.5 + localNight * 0.5;
-            }
-        }
-
+        double vanillaProgress = LatitudeCelestialClock.skyOrbitProgress(snapshot.solar());
         return vanillaSkyAngle(vanillaProgress);
     }
 
