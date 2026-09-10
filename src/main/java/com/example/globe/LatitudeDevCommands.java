@@ -22,6 +22,7 @@ import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.border.WorldBorder;
+import net.minecraft.world.level.ServerWorldProperties;
 
 import java.util.EnumSet;
 import java.util.Locale;
@@ -366,13 +367,22 @@ public final class LatitudeDevCommands {
 
     private static int setDayOfYear(CommandContext<ServerCommandSource> ctx, int day) {
         try {
-            ServerWorld world = ctx.getSource().getWorld();
-            long currentDay = Math.floorDiv(world.getTimeOfDay(), LatitudeCalendarMath.TICKS_PER_DAY);
+            ServerCommandSource source = ctx.getSource();
+            ServerWorld world = source.getWorld();
+            ServerWorldProperties properties = (ServerWorldProperties) world.getLevelProperties();
+            long currentDay = Math.floorDiv(world.getTime(), LatitudeCalendarMath.TICKS_PER_DAY);
             long year = Math.floorDiv(currentDay, LatitudeCalendarMath.DAYS_PER_YEAR);
             long tickInDay = Math.floorMod(world.getTimeOfDay(), LatitudeCalendarMath.TICKS_PER_DAY);
             long target = (year * LatitudeCalendarMath.DAYS_PER_YEAR + day - 1L)
                     * LatitudeCalendarMath.TICKS_PER_DAY + tickInDay;
-            return setTimeOfDay(ctx, target, "dayofyear=" + day);
+            long beforeTime = world.getTime();
+            properties.setTime(target);
+            properties.setTimeOfDay(tickInDay);
+            source.sendFeedback(() -> Text.literal("[latitude.time] set dayofyear=" + day
+                    + ": beforeTime=" + beforeTime
+                    + " afterTime=" + world.getTime()
+                    + " dayTime=" + Math.floorMod(world.getTimeOfDay(), LatitudeCalendarMath.TICKS_PER_DAY)), false);
+            return debugTime(ctx);
         } catch (Exception e) {
             return error(ctx, e);
         }
