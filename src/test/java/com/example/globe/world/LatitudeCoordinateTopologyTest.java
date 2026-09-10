@@ -178,6 +178,20 @@ class LatitudeCoordinateTopologyTest {
     }
 
     @Test
+    void smallNorthwardStepInsidePoleTriggerBandIsMappedAcrossThePole() {
+        LatitudeCoordinateTopology topology = new LatitudeCoordinateTopology(CIRCUMFERENCE_BLOCKS, POLE_TO_POLE_BLOCKS);
+
+        LatitudeCoordinateTopology.MovementResult result = topology.mapMovementWithPoleTrigger(
+                12.0, 1.0, 13.0, 0.5, 4.0, 1.0);
+
+        assertTrue(result.accepted());
+        assertFalse(result.crossedLongitude());
+        assertTrue(result.crossedPole());
+        assertEquals(0.5, result.coordinate().meridionalBlocks(), 1.0e-9);
+        assertEquals(-167.0, result.coordinate().wrappedXBlocks(), 1.0e-9);
+    }
+
+    @Test
     void simultaneousLongitudeAndPoleCrossingIsRejectedAsAmbiguous() {
         LatitudeCoordinateTopology topology = new LatitudeCoordinateTopology(CIRCUMFERENCE_BLOCKS, POLE_TO_POLE_BLOCKS);
 

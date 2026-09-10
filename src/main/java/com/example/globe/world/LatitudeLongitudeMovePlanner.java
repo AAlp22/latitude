@@ -33,6 +33,22 @@ public final class LatitudeLongitudeMovePlanner {
         return new Plan(intercept, intercept ? movement.position() : null, movement);
     }
 
+    public Plan planWithPoleTriggers(double currentWorldX, double currentWorldZ,
+                                     double targetWorldX, double targetWorldZ) {
+        LatitudeWorldTopologyMapper.MovementResult movement = mapper.mapMovementWithTriggers(
+                currentWorldX,
+                currentWorldZ,
+                targetWorldX,
+                targetWorldZ,
+                maxCrossingStepBlocks,
+                triggerMarginBlocks,
+                triggerMarginBlocks);
+
+        boolean intercept = movement.accepted()
+                && (movement.crossedLongitude() || movement.crossedPole());
+        return new Plan(intercept, intercept ? movement.position() : null, movement);
+    }
+
     private static void requirePositiveFinite(double value, String name) {
         if (!Double.isFinite(value) || value <= 0.0) {
             throw new IllegalArgumentException(name + " must be finite and greater than zero");

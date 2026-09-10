@@ -49,6 +49,31 @@ public final class LatitudeWorldTopologyMapper {
                 logical.rejection());
     }
 
+    public MovementResult mapMovementWithTriggers(double currentWorldX, double currentWorldZ,
+                                                   double targetWorldX, double targetWorldZ,
+                                                   double maxCrossingStepBlocks,
+                                                   double longitudeTriggerMarginBlocks,
+                                                   double poleTriggerMarginBlocks) {
+        LatitudeCoordinateTopology.MovementResult logical = topology.mapMovementWithTriggers(
+                currentWorldX - centerX,
+                toMeridional(currentWorldZ),
+                targetWorldX - centerX,
+                toMeridional(targetWorldZ),
+                maxCrossingStepBlocks,
+                longitudeTriggerMarginBlocks,
+                poleTriggerMarginBlocks);
+
+        MappedPosition position = logical.coordinate() == null
+                ? null
+                : toWorldPosition(logical.coordinate());
+        return new MovementResult(
+                logical.accepted(),
+                logical.crossedLongitude(),
+                logical.crossedPole(),
+                position,
+                logical.rejection());
+    }
+
     public double centerX() {
         return centerX;
     }

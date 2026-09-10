@@ -35,4 +35,31 @@ class LatitudeLongitudeMovePlannerTest {
         assertNull(plan.position());
         assertTrue(plan.movement().crossedPole());
     }
+
+    @Test
+    void poleEnabledPlannerInterceptsTheSmallPoleTriggerCrossing() {
+        LatitudeLongitudeMovePlanner planner = new LatitudeLongitudeMovePlanner(
+                BORDER_DIAMETER_BLOCKS, 100.0, 50.0, 4.0, 1.0);
+
+        LatitudeLongitudeMovePlanner.Plan plan = planner.planWithPoleTriggers(
+                112.0, -129.0, 113.0, -129.5);
+
+        assertTrue(plan.intercept());
+        assertTrue(plan.movement().crossedPole());
+        assertEquals(-67.0, plan.position().worldX(), 1.0e-9);
+        assertEquals(-129.5, plan.position().worldZ(), 1.0e-9);
+    }
+
+    @Test
+    void poleEnabledPlannerRejectsACombinedLongitudeAndPoleTrigger() {
+        LatitudeLongitudeMovePlanner planner = new LatitudeLongitudeMovePlanner(
+                BORDER_DIAMETER_BLOCKS, 100.0, 50.0, 4.0, 1.0);
+
+        LatitudeLongitudeMovePlanner.Plan plan = planner.planWithPoleTriggers(
+                278.5, -129.0, 279.5, -129.5);
+
+        assertFalse(plan.intercept());
+        assertNull(plan.position());
+        assertEquals(LatitudeCoordinateTopology.Rejection.MULTIPLE_SEAMS, plan.movement().rejection());
+    }
 }

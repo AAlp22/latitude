@@ -2,6 +2,7 @@ package com.example.globe.mixin;
 
 import com.example.globe.GlobeMod;
 import com.example.globe.world.LatitudeLongitudeMovePlanner;
+import com.example.globe.world.LatitudePoleCrossingTransform;
 import com.example.globe.world.LatitudeWorldTopologyMapper;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
@@ -19,7 +20,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ServerPlayNetworkHandler.class)
 public abstract class ServerPlayNetworkHandlerLatitudeTopologyMixin {
     @Unique
-    private static final String latitude$ENABLE_PROPERTY = "latitude.experimentalLongitudeLoop";
+    private static final String latitude$ENABLE_LONGITUDE_PROPERTY = "latitude.experimentalLongitudeLoop";
+
+    @Unique
+    private static final String latitude$ENABLE_POLE_PROPERTY = "latitude.experimentalPoleTraversal";
 
     @Unique
     private static final double latitude$MAX_CROSSING_STEP_BLOCKS = 4.0;
@@ -35,7 +39,9 @@ public abstract class ServerPlayNetworkHandlerLatitudeTopologyMixin {
 
     @Inject(method = "onPlayerMove", at = @At("HEAD"), cancellable = true)
     private void latitude$interceptLongitudeSeam(PlayerMoveC2SPacket packet, CallbackInfo ci) {
-        if (!Boolean.getBoolean(latitude$ENABLE_PROPERTY)
+        boolean longitudeEnabled = Boolean.getBoolean(latitude$ENABLE_LONGITUDE_PROPERTY);
+        boolean poleEnabled = Boolean.getBoolean(latitude$ENABLE_POLE_PROPERTY);
+        if ((!longitudeEnabled && !poleEnabled)
                 || packet == null
                 || !packet.changesPosition()) {
             return;
@@ -75,6 +81,9 @@ public abstract class ServerPlayNetworkHandlerLatitudeTopologyMixin {
                 || !Float.isFinite(targetPitch)) {
             return;
         }
+        if (Math.abs(targetY - currentPlayer.getY()) > latitude$MAX_CROSSING_STEP_BLOCKS) {
+            return;
+        }
 
         LatitudeLongitudeMovePlanner planner = new LatitudeLongitudeMovePlanner(
                 borderDiameter,
@@ -82,18 +91,35 @@ public abstract class ServerPlayNetworkHandlerLatitudeTopologyMixin {
                 border.getCenterZ(),
                 latitude$MAX_CROSSING_STEP_BLOCKS,
                 latitude$TRIGGER_MARGIN_BLOCKS);
-        LatitudeLongitudeMovePlanner.Plan plan = planner.plan(
+        LatitudeLongitudeMovePlanner.Plan plan = planner.planWithPoleTriggers(
                 currentPlayer.getX(),
                 currentPlayer.getZ(),
                 targetX,
                 targetZ);
-        if (!plan.intercept()) {
+        if (!plan.intercept()
+                || (plan.movement().crossedLongitude() && !longitudeEnabled)
+                || (plan.movement().crossedPole() && !poleEnabled)) {
             return;
         }
 
         LatitudeWorldTopologyMapper.MappedPosition position = plan.position();
+        if (position == null || !currentPlayer.doesNotCollide(position.worldX(), targetY, position.worldZ())) {
+            return;
+        }
+
         Vec3d velocity = currentPlayer.getVelocity();
-        requestTeleport(position.worldX(), targetY, position.worldZ(), targetYaw, targetPitch);
+        float effectiveYaw = targetYaw;
+        if (plan.movement().crossedPole()) {
+            LatitudePoleCrossingTransform.Motion transformed = LatitudePoleCrossingTransform.transform(
+                    velocity.x,
+                    velocity.z,
+                    targetYaw);
+            effectiveYaw = (float) transformed.yawDegrees();
+            velocity = new Vec3d(transformed.xVelocity(), velocity.y, transformed.meridionalVelocity());
+        }
+
+        requestTeleport(position.worldX(), targetY, position.worldZ(), effectiveYaw, targetPitch);
+        world.getChunkManager().updatePosition(currentPlayer);
         currentPlayer.setVelocity(velocity);
         ci.cancel();
     }

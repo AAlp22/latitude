@@ -120,6 +120,94 @@ public final class LatitudeCoordinateTopology {
                 virtualTargetX, targetMeridionalBlocks, maxCrossingStepBlocks);
     }
 
+    public MovementResult mapMovementWithPoleTrigger(double currentXBlocks, double currentMeridionalBlocks,
+                                                      double targetXBlocks, double targetMeridionalBlocks,
+                                                      double maxCrossingStepBlocks,
+                                                      double triggerMarginBlocks) {
+        requirePositiveFinite(triggerMarginBlocks, "triggerMarginBlocks");
+        if (triggerMarginBlocks >= poleToPoleBlocks) {
+            throw new IllegalArgumentException("triggerMarginBlocks must be smaller than the pole-to-pole span");
+        }
+
+        boolean targetAlreadyOutside = targetMeridionalBlocks < 0.0
+                || targetMeridionalBlocks > poleToPoleBlocks;
+        if (targetAlreadyOutside) {
+            return mapMovement(currentXBlocks, currentMeridionalBlocks,
+                    targetXBlocks, targetMeridionalBlocks, maxCrossingStepBlocks);
+        }
+
+        boolean movingNorthIntoTrigger = targetMeridionalBlocks < currentMeridionalBlocks
+                && targetMeridionalBlocks < triggerMarginBlocks;
+        boolean movingSouthIntoTrigger = targetMeridionalBlocks > currentMeridionalBlocks
+                && targetMeridionalBlocks > poleToPoleBlocks - triggerMarginBlocks;
+        if (!movingNorthIntoTrigger && !movingSouthIntoTrigger) {
+            return mapMovement(currentXBlocks, currentMeridionalBlocks,
+                    targetXBlocks, targetMeridionalBlocks, maxCrossingStepBlocks);
+        }
+
+        double virtualTargetMeridional = movingNorthIntoTrigger
+                ? targetMeridionalBlocks - triggerMarginBlocks
+                : targetMeridionalBlocks + triggerMarginBlocks;
+        return mapMovement(currentXBlocks, currentMeridionalBlocks,
+                targetXBlocks, virtualTargetMeridional, maxCrossingStepBlocks);
+    }
+
+    public MovementResult mapMovementWithTriggers(double currentXBlocks, double currentMeridionalBlocks,
+                                                   double targetXBlocks, double targetMeridionalBlocks,
+                                                   double maxCrossingStepBlocks,
+                                                   double longitudeTriggerMarginBlocks,
+                                                   double poleTriggerMarginBlocks) {
+        requirePositiveFinite(longitudeTriggerMarginBlocks, "longitudeTriggerMarginBlocks");
+        requirePositiveFinite(poleTriggerMarginBlocks, "poleTriggerMarginBlocks");
+        if (longitudeTriggerMarginBlocks >= halfCircumferenceBlocks) {
+            throw new IllegalArgumentException("longitudeTriggerMarginBlocks must be smaller than half the circumference");
+        }
+        if (poleTriggerMarginBlocks >= poleToPoleBlocks) {
+            throw new IllegalArgumentException("poleTriggerMarginBlocks must be smaller than the pole-to-pole span");
+        }
+
+        boolean targetAlreadyOutside = targetXBlocks < -halfCircumferenceBlocks
+                || targetXBlocks >= halfCircumferenceBlocks
+                || targetMeridionalBlocks < 0.0
+                || targetMeridionalBlocks > poleToPoleBlocks;
+        if (targetAlreadyOutside) {
+            return mapMovement(currentXBlocks, currentMeridionalBlocks,
+                    targetXBlocks, targetMeridionalBlocks, maxCrossingStepBlocks);
+        }
+
+        boolean movingEastIntoTrigger = targetXBlocks > currentXBlocks
+                && targetXBlocks >= halfCircumferenceBlocks - longitudeTriggerMarginBlocks;
+        boolean movingWestIntoTrigger = targetXBlocks < currentXBlocks
+                && targetXBlocks < -halfCircumferenceBlocks + longitudeTriggerMarginBlocks;
+        boolean movingNorthIntoTrigger = targetMeridionalBlocks < currentMeridionalBlocks
+                && targetMeridionalBlocks < poleTriggerMarginBlocks;
+        boolean movingSouthIntoTrigger = targetMeridionalBlocks > currentMeridionalBlocks
+                && targetMeridionalBlocks > poleToPoleBlocks - poleTriggerMarginBlocks;
+
+        boolean longitudeTrigger = movingEastIntoTrigger || movingWestIntoTrigger;
+        boolean poleTrigger = movingNorthIntoTrigger || movingSouthIntoTrigger;
+        if (longitudeTrigger && poleTrigger) {
+            return MovementResult.rejected(Rejection.MULTIPLE_SEAMS);
+        }
+        if (!longitudeTrigger && !poleTrigger) {
+            return mapMovement(currentXBlocks, currentMeridionalBlocks,
+                    targetXBlocks, targetMeridionalBlocks, maxCrossingStepBlocks);
+        }
+
+        double virtualTargetX = movingEastIntoTrigger
+                ? targetXBlocks + longitudeTriggerMarginBlocks
+                : movingWestIntoTrigger
+                ? targetXBlocks - longitudeTriggerMarginBlocks
+                : targetXBlocks;
+        double virtualTargetMeridional = movingNorthIntoTrigger
+                ? targetMeridionalBlocks - poleTriggerMarginBlocks
+                : movingSouthIntoTrigger
+                ? targetMeridionalBlocks + poleTriggerMarginBlocks
+                : targetMeridionalBlocks;
+        return mapMovement(currentXBlocks, currentMeridionalBlocks,
+                virtualTargetX, virtualTargetMeridional, maxCrossingStepBlocks);
+    }
+
     public double wrapX(double xBlocks) {
         requireFinite(xBlocks, "xBlocks");
         return positiveModulo(xBlocks + halfCircumferenceBlocks, circumferenceBlocks)
