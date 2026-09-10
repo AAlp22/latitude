@@ -19,9 +19,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(NoiseChunkGenerator.class)
 public class NoiseChunkGeneratorCarveMixin {
-    private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_KEY = RegistryKey.of(
+    private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_SMALL_KEY = RegistryKey.of(
             RegistryKeys.CHUNK_GENERATOR_SETTINGS,
-            Identifier.of("globe", "overworld")
+            Identifier.of("globe", "overworld_small")
+    );
+    private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_MEDIUM_KEY = RegistryKey.of(
+            RegistryKeys.CHUNK_GENERATOR_SETTINGS,
+            Identifier.of("globe", "overworld_medium")
+    );
+    private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_REGULAR_KEY = RegistryKey.of(
+            RegistryKeys.CHUNK_GENERATOR_SETTINGS,
+            Identifier.of("globe", "overworld_regular")
+    );
+    private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_LARGE_KEY = RegistryKey.of(
+            RegistryKeys.CHUNK_GENERATOR_SETTINGS,
+            Identifier.of("globe", "overworld_large")
+    );
+    private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_MASSIVE_KEY = RegistryKey.of(
+            RegistryKeys.CHUNK_GENERATOR_SETTINGS,
+            Identifier.of("globe", "overworld_massive")
     );
 
     @Inject(
@@ -32,7 +48,11 @@ public class NoiseChunkGeneratorCarveMixin {
     private void globe$disableCarversInPolarCap(ChunkRegion chunkRegion, long seed, NoiseConfig noiseConfig, BiomeAccess biomeAccess,
                                                StructureAccessor structureAccessor, Chunk chunk, GenerationStep.Carver carver, CallbackInfo ci) {
         NoiseChunkGenerator self = (NoiseChunkGenerator) (Object) this;
-        if (!self.matchesSettings(GLOBE_SETTINGS_KEY)) {
+        if (!self.matchesSettings(GLOBE_SETTINGS_SMALL_KEY)
+                && !self.matchesSettings(GLOBE_SETTINGS_MEDIUM_KEY)
+                && !self.matchesSettings(GLOBE_SETTINGS_REGULAR_KEY)
+                && !self.matchesSettings(GLOBE_SETTINGS_LARGE_KEY)
+                && !self.matchesSettings(GLOBE_SETTINGS_MASSIVE_KEY)) {
             return;
         }
 

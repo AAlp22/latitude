@@ -18,7 +18,7 @@ public final class LatitudePlanisphereRenderer {
     private static final int MAX_DIAMETER = Arrays.stream(GlobeWorldSize.values())
             .mapToInt(s -> s.borderRadiusBlocks * 2)
             .max()
-            .orElse(40000);
+            .orElse(400000);
 
     // ── Band native colors (ARGB, indexed by Band.ordinal()) ──
     private static final int[] BAND_COLORS = {
@@ -82,7 +82,7 @@ public final class LatitudePlanisphereRenderer {
         fillCircle(ctx, cx, cy, radius, OCEAN_COLOR);
 
         // ── 2. Dashed ring (Itty Bitty and Tiny only) ──
-        if (size == GlobeWorldSize.ITTY_BITTY || size == GlobeWorldSize.TINY) {
+        if (size == GlobeWorldSize.SMALL) {
             int dashRadius = (int) (radius * 0.70f);
             drawDashedCircle(ctx, cx, cy, dashRadius, 0x30FFFFFF);
         }

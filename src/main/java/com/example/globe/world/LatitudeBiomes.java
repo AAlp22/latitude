@@ -275,6 +275,8 @@ public final class LatitudeBiomes {
     private static volatile long WORLD_SEED = 0L;
     public static volatile int ACTIVE_RADIUS_BLOCKS = 0;
     private static OceanDistanceField OCEAN_DISTANCE_FIELD = null;
+    private static volatile Registry<Biome> ACTIVE_BIOME_REGISTRY;
+    private static volatile Collection<RegistryEntry<Biome>> ACTIVE_BIOME_POOL = List.of();
     private static final AtomicInteger DEBUG_COUNT = new AtomicInteger();
     private static final AtomicInteger BLEND_DEBUG_COUNT = new AtomicInteger();
     private static final AtomicInteger LEAK_LOG_COUNT = new AtomicInteger();
@@ -312,6 +314,27 @@ public final class LatitudeBiomes {
         if (DEBUG_MANGROVE_DENIAL) {
             LOGGER.info("[latdev] mangroveDenied reason={}", reason);
         }
+    }
+
+    public static void setActiveBiomeRegistry(Registry<Biome> biomeRegistry) {
+        if (biomeRegistry == ACTIVE_BIOME_REGISTRY && !ACTIVE_BIOME_POOL.isEmpty()) {
+            return;
+        }
+        if (biomeRegistry == null) {
+            ACTIVE_BIOME_REGISTRY = null;
+            ACTIVE_BIOME_POOL = List.of();
+            return;
+        }
+        Collection<RegistryEntry<Biome>> snapshot = biomeRegistry.streamEntries()
+                .map(entry -> (RegistryEntry<Biome>) entry)
+                .toList();
+        ACTIVE_BIOME_REGISTRY = biomeRegistry;
+        ACTIVE_BIOME_POOL = snapshot;
+    }
+
+    public static Collection<RegistryEntry<Biome>> completeBiomePool(Collection<RegistryEntry<Biome>> fallback) {
+        Collection<RegistryEntry<Biome>> active = ACTIVE_BIOME_POOL;
+        return active.isEmpty() ? fallback : active;
     }
 
     public static void setWorldSeed(long seed) {

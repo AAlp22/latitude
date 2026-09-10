@@ -8,7 +8,7 @@
           "type": "minecraft:multi_noise",
           "preset": "minecraft:overworld"
         },
-        "settings": "globe:overworld_xsmall"
+        "settings": "globe:overworld_medium"
       }
     },
     "minecraft:the_nether": {

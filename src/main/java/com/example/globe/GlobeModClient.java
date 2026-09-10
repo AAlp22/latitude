@@ -2,11 +2,11 @@ package com.example.globe;
 
 import com.example.globe.client.LatitudeConfig;
 import com.example.globe.client.GlobeClientState;
-import com.example.globe.client.CompassHud;
-import com.example.globe.client.CompassHudConfig;
-import com.example.globe.client.ClientKeybinds;
-import com.example.globe.client.GlobeWarningOverlay;
-import com.example.globe.client.LatitudeSettingsScreen;
+
+
+
+
+
 import com.example.globe.client.SpawnZoneScreen;
 import com.example.globe.client.EwSandstormOverlayRenderer;
 import com.example.globe.dev.DevCaptureKeybind;
@@ -36,6 +36,7 @@ public class GlobeModClient implements ClientModInitializer {
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             GlobeClientState.setGlobeWorld(false);
+            com.example.globe.world.LatitudeSeasonBridge.setClientGlobeWorld(false);
             pendingSpawnPickerOpen = false;
         });
 
@@ -43,6 +44,7 @@ public class GlobeModClient implements ClientModInitializer {
             GlobeNet.GlobeStatePayload payload = GlobeNet.GlobeStatePayload.read(buf);
             client2.execute(() -> {
                 GlobeClientState.setGlobeWorld(payload.isGlobe());
+                com.example.globe.world.LatitudeSeasonBridge.setClientGlobeWorld(payload.isGlobe());
                 GlobeMod.LOGGER.info("S2C globe state: isGlobe={}", payload.isGlobe());
             });
         });
@@ -59,36 +61,16 @@ public class GlobeModClient implements ClientModInitializer {
             });
         });
 
-        GlobeWarningOverlay.init();
-        CompassHud.init();
         ClientTickEvents.END_CLIENT_TICK.register(GlobeModClient::polarCapClientTick);
-        ClientKeybinds.init();
         if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
             DevCaptureKeybind.init();
         }
-        ClientTickEvents.END_CLIENT_TICK.register(GlobeModClient::clientKeybindTick);
 
         WorldRenderEvents.AFTER_TRANSLUCENT.register(ctx -> {
             if (!GlobeClientState.DEBUG_EW_WALL) return;
             // EwStormWallRenderer.render(ctx.matrices(), ctx.consumers()); // TEMP: wall disabled (overlay bring-up)
             EwSandstormOverlayRenderer.render(ctx.matrixStack(), ctx.consumers());
         });
-    }
-
-    private static void clientKeybindTick(MinecraftClient client) {
-        while (ClientKeybinds.TOGGLE_COMPASS.wasPressed()) {
-            var cfg = CompassHudConfig.get();
-            cfg.enabled = !cfg.enabled;
-            CompassHudConfig.saveCurrent();
-        }
-
-        while (ClientKeybinds.OPEN_SETTINGS.wasPressed()) {
-            if (client.currentScreen == null) {
-                client.setScreen(new LatitudeSettingsScreen(null));
-            } else {
-                client.setScreen(new LatitudeSettingsScreen(client.currentScreen));
-            }
-        }
     }
 
     private static void polarCapClientTick(MinecraftClient client) {

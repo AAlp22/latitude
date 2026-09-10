@@ -2,6 +2,18 @@
   "replace": false,
   "values": [
     "minecraft:sparse_jungle",
-    "minecraft:bamboo_jungle"
+    "minecraft:bamboo_jungle",
+    {
+      "id": "traverse:lush_swamp",
+      "required": false
+    },
+    {
+      "id": "nyctophobia:marshlands",
+      "required": false
+    },
+    {
+      "id": "nyctophobia:ancient_dead_coral_reef",
+      "required": false
+    }
   ]
 }

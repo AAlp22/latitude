@@ -8,14 +8,15 @@ import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.biome.source.util.MultiNoiseUtil;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public final class LatitudeBiomeSource extends BiomeSource {
     private final BiomeSource original;
-    private final Collection<RegistryEntry<Biome>> biomes;
+    private final Supplier<Collection<RegistryEntry<Biome>>> biomes;
     private final int borderRadiusBlocks;
 
-    public LatitudeBiomeSource(BiomeSource original, Collection<RegistryEntry<Biome>> biomes, int borderRadiusBlocks) {
+    public LatitudeBiomeSource(BiomeSource original, Supplier<Collection<RegistryEntry<Biome>>> biomes, int borderRadiusBlocks) {
         this.original = original;
         this.biomes = biomes;
         this.borderRadiusBlocks = borderRadiusBlocks;
@@ -34,7 +35,7 @@ public final class LatitudeBiomeSource extends BiomeSource {
 
     @Override
     protected Stream<RegistryEntry<Biome>> biomeStream() {
-        return original.getBiomes().stream();
+        return LatitudeBiomes.completeBiomePool(biomes.get()).stream();
     }
 
     @Override
@@ -43,6 +44,7 @@ public final class LatitudeBiomeSource extends BiomeSource {
         int blockX = x << 2;
         int blockZ = z << 2;
         int blockY = y << 2;
-        return LatitudeBiomes.pick(biomes, base, blockX, blockZ, blockY, borderRadiusBlocks, sampler, "SOURCE", null, null, null);
+        Collection<RegistryEntry<Biome>> pool = LatitudeBiomes.completeBiomePool(biomes.get());
+        return LatitudeBiomes.pick(pool, base, blockX, blockZ, blockY, borderRadiusBlocks, sampler, "SOURCE", null, null, null);
     }
 }

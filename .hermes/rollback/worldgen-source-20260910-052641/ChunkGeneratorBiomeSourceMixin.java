@@ -2,18 +2,12 @@ package com.example.globe.mixin;
 
 import com.example.globe.GlobeMod;
 import com.example.globe.world.LatitudeBiomeSource;
-import com.example.globe.world.LatitudeBiomes;
-import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorSettings;
-import net.minecraft.world.gen.chunk.Blender;
-import net.minecraft.world.gen.StructureAccessor;
-import net.minecraft.world.gen.noise.NoiseConfig;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeSource;
 import org.spongepowered.asm.mixin.Final;
@@ -24,9 +18,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 @Mixin(ChunkGenerator.class)
 public abstract class ChunkGeneratorBiomeSourceMixin {
@@ -72,39 +63,18 @@ public abstract class ChunkGeneratorBiomeSourceMixin {
     @Inject(method = "<init>(Lnet/minecraft/world/biome/source/BiomeSource;)V", at = @At("TAIL"), require = 0)
     private void globe$wrapBiomeSource(BiomeSource biomeSource, CallbackInfo ci) {
         globe$maybeWrapBiomeSource();
-        globe$installWrappedFieldIfSafe();
     }
 
     @Inject(method = "<init>(Lnet/minecraft/world/biome/source/BiomeSource;Ljava/util/function/Function;)V", at = @At("TAIL"), require = 0)
     private void globe$wrapBiomeSource(BiomeSource biomeSource, java.util.function.Function<?, ?> settingsLookup, CallbackInfo ci) {
         globe$maybeWrapBiomeSource();
-        globe$installWrappedFieldIfSafe();
-    }
-
-    @Inject(
-            method = "populateBiomes(Ljava/util/concurrent/Executor;Lnet/minecraft/world/gen/noise/NoiseConfig;Lnet/minecraft/world/gen/chunk/Blender;Lnet/minecraft/world/gen/StructureAccessor;Lnet/minecraft/world/chunk/Chunk;)Ljava/util/concurrent/CompletableFuture;",
-            at = @At("HEAD")
-    )
-    private void globe$installBeforeBiomePopulation(Executor executor, NoiseConfig noiseConfig, Blender blender,
-                                                     StructureAccessor structureAccessor, Chunk chunk,
-                                                     CallbackInfoReturnable<CompletableFuture<Chunk>> cir) {
-        if (structureAccessor != null && globe$isAnyGlobeSettings()) {
-            Registry<Biome> registry = structureAccessor.getRegistryManager().get(RegistryKeys.BIOME);
-            LatitudeBiomes.setActiveBiomeRegistry(registry);
-        }
-        globe$maybeWrapBiomeSource();
-        globe$installWrappedFieldIfSafe();
     }
 
     @Inject(method = "getBiomeSource", at = @At("HEAD"), cancellable = true)
     private void globe$returnWrappedBiomeSource(CallbackInfoReturnable<BiomeSource> cir) {
         globe$maybeWrapBiomeSource();
-        globe$installWrappedFieldIfSafe();
-        BiomeSource authoritative = this.biomeSource instanceof LatitudeBiomeSource
-                ? this.biomeSource
-                : this.globe$wrappedBiomeSource;
-        if (authoritative != null && globe$canExposeWrappedBiomeSource()) {
-            cir.setReturnValue(authoritative);
+        if (this.globe$wrappedBiomeSource != null && globe$canExposeWrappedBiomeSource()) {
+            cir.setReturnValue(this.globe$wrappedBiomeSource);
             cir.cancel();
         }
     }
@@ -138,14 +108,6 @@ public abstract class ChunkGeneratorBiomeSourceMixin {
                 GlobeMod.LOGGER.warn("[Latitude] unable to inspect Biolith dimension-type handoff; keeping original biome source", e);
             }
             return false;
-        }
-    }
-
-    private void globe$installWrappedFieldIfSafe() {
-        if (this.globe$wrappedBiomeSource != null
-                && !(this.biomeSource instanceof LatitudeBiomeSource)
-                && globe$canExposeWrappedBiomeSource()) {
-            this.biomeSource = this.globe$wrappedBiomeSource;
         }
     }
 

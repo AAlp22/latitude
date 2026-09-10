@@ -8,7 +8,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.screen.world.WorldCreator;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.CyclingButtonWidget;
 import net.minecraft.registry.RegistryKey;
@@ -45,9 +44,6 @@ public abstract class CreateWorldScreenSpawnZoneMixin extends Screen {
     private CyclingButtonWidget<GlobeWorldSize> globe$worldSizeButton;
 
     @Unique
-    private ButtonWidget globe$startWithCompassButton;
-
-    @Unique
     private ClickableWidget globe$worldTypeWidget;
 
     protected CreateWorldScreenSpawnZoneMixin(Text title) {
@@ -58,7 +54,6 @@ public abstract class CreateWorldScreenSpawnZoneMixin extends Screen {
     private void globe$initSpawnZone(CallbackInfo ci) {
         this.globe$spawnZoneButton = null;
         this.globe$worldSizeButton = null;
-        this.globe$startWithCompassButton = null;
         this.globe$worldTypeWidget = null;
 
         CreateWorldScreen self = (CreateWorldScreen) (Object) this;
@@ -95,15 +90,6 @@ public abstract class CreateWorldScreenSpawnZoneMixin extends Screen {
 
         this.addDrawableChild(this.globe$worldSizeButton);
 
-        GlobePending.startWithCompass = true;
-        this.globe$startWithCompassButton = ButtonWidget.builder(globe$startWithCompassLabel(), b -> {
-                    GlobePending.startWithCompass = !GlobePending.startWithCompass;
-                    b.setMessage(globe$startWithCompassLabel());
-                })
-                .dimensions(x, y + (h + 4) * 2, w, h)
-                .build();
-        this.addDrawableChild(this.globe$startWithCompassButton);
-
         GlobePending.set(GLOBE_ZONES[0]);
         globe$updateEnabledState();
     }
@@ -127,16 +113,6 @@ public abstract class CreateWorldScreenSpawnZoneMixin extends Screen {
             this.globe$worldSizeButton.active = true;
         }
 
-        if (this.globe$startWithCompassButton != null) {
-            this.globe$startWithCompassButton.visible = true;
-            this.globe$startWithCompassButton.active = true;
-            this.globe$startWithCompassButton.setMessage(globe$startWithCompassLabel());
-        }
-    }
-
-    @Unique
-    private static Text globe$startWithCompassLabel() {
-        return Text.literal("Start with compass: " + (GlobePending.startWithCompass ? "ON" : "OFF"));
     }
 
     @Unique

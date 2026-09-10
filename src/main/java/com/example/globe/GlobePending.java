@@ -6,8 +6,6 @@ public final class GlobePending {
 
     private static volatile String pendingSpawnZone;
 
-    public static volatile boolean startWithCompass = true;
-
     public static void set(String zoneId) {
         pendingSpawnZone = zoneId;
     }

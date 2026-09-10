@@ -1,7 +1,6 @@
 package com.example.globe.client.create;
 
 import com.example.globe.client.GlobeWorldSize;
-import com.example.globe.client.LatitudeHudStudioScreen;
 import com.example.globe.util.LatitudeBands;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -83,17 +82,16 @@ public class LatitudeCreateWorldScreen extends Screen {
 
     // ── Size short names (indexed by GlobeWorldSize.ordinal()) ──
     private static final String[] SIZE_SHORT_NAMES = {
-            "Itty Bitty", "Tiny", "Small", "Regular", "Large", "Ginormous"
+            "Small", "Medium", "Regular", "Large", "Massive"
     };
 
     // ── Size descriptions (indexed by GlobeWorldSize.ordinal()) ──
     private static final String[] SIZE_DESCRIPTIONS = {
-            "A pocket world. Every horizon feels close.",
-            "Compact but complete. Good for focused journeys.",
-            "Room to roam. Familiar landmarks within reach.",
+            "A compact globe for focused journeys.",
+            "A broad world with room for regional travel.",
             "The standard expedition. A full planet awaits.",
             "Vast distances. Bring supplies.",
-            "A world that could take a lifetime to cross."
+            "An enormous world. The poles are a serious expedition."
     };
 
     private static final Text SMALL_WORLD_WARNING = Text.literal(
@@ -120,7 +118,6 @@ public class LatitudeCreateWorldScreen extends Screen {
     private LatitudeBands.Band selectedZone = LatitudeBands.Band.TEMPERATE;
     private int selectedModeIdx = 0;  // 0=Survival, 1=Hardcore, 2=Creative
     private boolean allowCommands = false;
-    private boolean startWithCompass = true;
     private boolean bonusChest = false;
     private int worldTypeIdx = 0;  // 0=Latitude, 1=Vanilla, 2=Vanilla Superflat
     private GameRules gameRules;
@@ -134,14 +131,12 @@ public class LatitudeCreateWorldScreen extends Screen {
 
     // ── Settings rail toggle buttons (need message updates) ──
     private ButtonWidget commandsBtn;
-    private ButtonWidget compassBtn;
     private ButtonWidget bonusChestBtn;
     private ButtonWidget worldTypePrevBtn;
     private ButtonWidget worldTypeNextBtn;
     private ButtonWidget modePrevBtn;
     private ButtonWidget modeNextBtn;
     private ButtonWidget gameRulesBtn;
-    private ButtonWidget hudStudioBtn;
 
     // ── Layout cache (computed in init, used in render) ──
     private int headerY;
@@ -194,7 +189,6 @@ public class LatitudeCreateWorldScreen extends Screen {
     private int worldTypeRowY;
     private int modeRowY;
     private int commandsRowY;
-    private int compassRowY;
     private int bonusChestRowY;
     private int gameRulesRowY;
 
@@ -408,12 +402,6 @@ public class LatitudeCreateWorldScreen extends Screen {
             this.addDrawableChild(modeNextBtn);
             this.addDrawableChild(commandsBtn);
 
-            compassBtn = ButtonWidget.builder(Text.literal(startWithCompass ? "ON" : "OFF"), b -> {
-                startWithCompass = !startWithCompass;
-                b.setMessage(Text.literal(startWithCompass ? "ON" : "OFF"));
-            }).dimensions(settBtnX, panelTop, settBtnW, btnH).build();
-            this.addDrawableChild(compassBtn);
-
             bonusChestBtn = ButtonWidget.builder(Text.literal(bonusChest ? "ON" : "OFF"), b -> {
                 bonusChest = !bonusChest;
                 b.setMessage(Text.literal(bonusChest ? "ON" : "OFF"));
@@ -425,10 +413,6 @@ public class LatitudeCreateWorldScreen extends Screen {
                     .build();
             this.addDrawableChild(gameRulesBtn);
 
-            hudStudioBtn = ButtonWidget.builder(Text.literal("HUD Studio"), b -> openHudStudio())
-                    .dimensions(settBtnX, panelTop, settBtnW, btnH)
-                    .build();
-            this.addDrawableChild(hudStudioBtn);
             updateSettingsLayout();
         }
 
@@ -729,10 +713,6 @@ public class LatitudeCreateWorldScreen extends Screen {
             commandsBtn.setMessage(Text.literal(allowCommands ? "ON" : "OFF"));
             commandsBtn.active = commandsBtn.visible;
         }
-        if (compassBtn != null) {
-            compassBtn.setMessage(Text.literal(startWithCompass ? "ON" : "OFF"));
-            compassBtn.active = compassBtn.visible && isLatitudeWorld();
-        }
         if (bonusChestBtn != null) {
             bonusChestBtn.setMessage(Text.literal(bonusChest ? "ON" : "OFF"));
             bonusChestBtn.active = !isLatitudeWorld() && bonusChestBtn.visible;
@@ -740,13 +720,10 @@ public class LatitudeCreateWorldScreen extends Screen {
         if (gameRulesBtn != null) {
             gameRulesBtn.active = gameRulesBtn.visible;
         }
-        if (hudStudioBtn != null) {
-            hudStudioBtn.active = hudStudioBtn.visible;
-        }
     }
 
     private void updateSettingsLayout() {
-        if (worldTypePrevBtn == null || worldTypeNextBtn == null || modePrevBtn == null || modeNextBtn == null || commandsBtn == null || compassBtn == null || bonusChestBtn == null || gameRulesBtn == null || hudStudioBtn == null) {
+        if (worldTypePrevBtn == null || worldTypeNextBtn == null || modePrevBtn == null || modeNextBtn == null || commandsBtn == null || bonusChestBtn == null || gameRulesBtn == null) {
             settingsViewportTop = 0;
             settingsViewportBottom = 0;
             settingsContentHeight = 0;
@@ -763,7 +740,7 @@ public class LatitudeCreateWorldScreen extends Screen {
         int viewportHeight = Math.max(0, settingsViewportBottom - settingsViewportTop);
         int contentTop = settingsViewportTop + scaledUi(4);
         int blockHeight = labelGap + btnH;
-        settingsContentHeight = blockHeight * 7 + rowGap * 6;
+        settingsContentHeight = blockHeight * 5 + rowGap * 4;
         int maxScroll = Math.max(0, settingsContentHeight - viewportHeight);
         if (settingsScroll < 0) settingsScroll = 0;
         if (settingsScroll > maxScroll) settingsScroll = maxScroll;
@@ -781,18 +758,11 @@ public class LatitudeCreateWorldScreen extends Screen {
         positionSettingsButton(commandsBtn, settBtnX, settBtnW, y, btnH);
 
         y += btnH + rowGap + labelGap;
-        compassRowY = y;
-        positionSettingsButton(compassBtn, settBtnX, settBtnW, y, btnH);
-
-        y += btnH + rowGap + labelGap;
         bonusChestRowY = y;
         positionSettingsButton(bonusChestBtn, settBtnX, settBtnW, y, btnH);
         y += btnH + rowGap + labelGap;
         gameRulesRowY = y;
         positionSettingsButton(gameRulesBtn, settBtnX, settBtnW, y, btnH);
-
-        y += btnH + rowGap + labelGap;
-        positionSettingsButton(hudStudioBtn, settBtnX, settBtnW, y, btnH);
 
         updateSettingsButtons();
     }
@@ -817,10 +787,8 @@ public class LatitudeCreateWorldScreen extends Screen {
         setTabbedWidgetVisible(modePrevBtn, showRules);
         setTabbedWidgetVisible(modeNextBtn, showRules);
         setTabbedWidgetVisible(commandsBtn, showRules);
-        setTabbedWidgetVisible(compassBtn, showRules);
         setTabbedWidgetVisible(bonusChestBtn, showRules && !isLatitudeWorld());
         setTabbedWidgetVisible(gameRulesBtn, showRules);
-        setTabbedWidgetVisible(hudStudioBtn, showRules);
     }
 
     private void setTabbedWidgetVisible(ClickableWidget widget, boolean visible) {
@@ -869,11 +837,6 @@ public class LatitudeCreateWorldScreen extends Screen {
         }));
     }
 
-    private void openHudStudio() {
-        if (this.client == null) return;
-        this.client.setScreen(new LatitudeHudStudioScreen(this));
-    }
-
     // ── Begin Expedition ──
 
     private void beginExpedition() {
@@ -888,7 +851,7 @@ public class LatitudeCreateWorldScreen extends Screen {
 
         LatitudeWorldLauncher.beginExpedition(this.client, this, this.holder,
                 worldName, seed, this.selectedSize, this.selectedZone,
-                gameMode, hardcore, difficulty, allowCommands, startWithCompass, bonusChest,
+                gameMode, hardcore, difficulty, allowCommands, bonusChest,
                 this.gameRules, this.worldTypeIdx);
     }
 
@@ -1150,7 +1113,6 @@ public class LatitudeCreateWorldScreen extends Screen {
             drawSettingsRowLabel(context, "Game Mode", settLabelX, modeRowY, MUTED);
             drawSettingsStepperValue(context, MODE_NAMES[selectedModeIdx], MODE_COLORS[selectedModeIdx], modeRowY);
             drawSettingsRowLabel(context, "Commands", settLabelX, commandsRowY, MUTED);
-            drawSettingsRowLabel(context, "Starting Compass", settLabelX, compassRowY, isLatitudeWorld() ? MUTED : DISABLED_COLOR);
             drawSettingsRowLabel(context, "Bonus Chest", settLabelX, bonusChestRowY, isLatitudeWorld() ? DISABLED_COLOR : MUTED);
             drawSettingsRowLabel(context, "Game Rules", settLabelX, gameRulesRowY, MUTED);
             context.disableScissor();
@@ -1182,7 +1144,7 @@ public class LatitudeCreateWorldScreen extends Screen {
 
     private boolean shouldShowSmallWorldWarning() {
         return switch (selectedSize) {
-            case ITTY_BITTY, TINY, SMALL -> true;
+            case SMALL -> true;
             default -> false;
         };
     }
@@ -1355,39 +1317,36 @@ public class LatitudeCreateWorldScreen extends Screen {
     }
 
     private boolean isTinyPreview(GlobeWorldSize size) {
-        return size == GlobeWorldSize.ITTY_BITTY || size == GlobeWorldSize.TINY;
+        return size == GlobeWorldSize.SMALL;
     }
 
     private float previewLabelScale(GlobeWorldSize size) {
         return switch (size) {
-            case ITTY_BITTY -> 0.58f;
-            case TINY -> 0.66f;
             case SMALL -> 0.78f;
-            case REGULAR -> 0.88f;
-            case LARGE -> 0.94f;
-            case MASSIVE -> 0.96f;
+            case MEDIUM -> 0.84f;
+            case REGULAR -> 0.90f;
+            case LARGE -> 0.95f;
+            case MASSIVE -> 0.98f;
         };
     }
 
     private float previewCaptionScale(GlobeWorldSize size) {
         return switch (size) {
-            case ITTY_BITTY -> 0.62f;
-            case TINY -> 0.70f;
             case SMALL -> 0.82f;
-            case REGULAR -> 0.90f;
-            case LARGE -> 0.94f;
-            case MASSIVE -> 0.96f;
+            case MEDIUM -> 0.86f;
+            case REGULAR -> 0.92f;
+            case LARGE -> 0.96f;
+            case MASSIVE -> 0.98f;
         };
     }
 
     private float previewDiscFill(GlobeWorldSize size) {
         return switch (size) {
-            case ITTY_BITTY -> 0.44f;
-            case TINY -> 0.52f;
             case SMALL -> 0.62f;
-            case REGULAR -> 0.72f;
-            case LARGE -> 0.82f;
-            case MASSIVE -> 0.90f;
+            case MEDIUM -> 0.72f;
+            case REGULAR -> 0.82f;
+            case LARGE -> 0.90f;
+            case MASSIVE -> 0.94f;
         };
     }
 

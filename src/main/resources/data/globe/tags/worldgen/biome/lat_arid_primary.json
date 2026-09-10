@@ -2,6 +2,14 @@
   "replace": false,
   "values": [
     "minecraft:desert",
-    "minecraft:badlands"
+    "minecraft:badlands",
+    {
+      "id": "traverse:desert_shrubland",
+      "required": false
+    },
+    {
+      "id": "nyctophobia:burnt_forest",
+      "required": false
+    }
   ]
 }

@@ -58,7 +58,7 @@ public final class LatitudeWorldLauncher {
                                        GlobeWorldSize size, LatitudeBands.Band spawnZone,
                                        GameMode gameMode, boolean hardcore,
                                        Difficulty difficulty, boolean allowCommands,
-                                       boolean startWithCompass, boolean bonusChest,
+                                       boolean bonusChest,
                                        GameRules gameRules, int worldTypeIdx) {
         // worldTypeIdx: 0=Latitude, 1=Vanilla, 2=Vanilla Superflat
         boolean isLatitude = worldTypeIdx == 0;
@@ -191,7 +191,7 @@ public final class LatitudeWorldLauncher {
             if (isLatitude) {
                 GlobeWorldSizeSelection.set(size);
                 GlobePending.set(spawnZone.id().toUpperCase(java.util.Locale.ROOT));
-                GlobePending.startWithCompass = startWithCompass;
+
                 activateLatitudeLoading();
                 if (LatitudeClientConfig.get().showFirstLoadMessage) {
                     LatitudeClientState.firstWorldLoad = true;

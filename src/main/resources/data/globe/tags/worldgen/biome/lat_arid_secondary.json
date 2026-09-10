@@ -2,6 +2,10 @@
   "replace": false,
   "values": [
     "minecraft:wooded_badlands",
-    "minecraft:eroded_badlands"
+    "minecraft:eroded_badlands",
+    {
+      "id": "nyctophobia:eroded_haunted_forest",
+      "required": false
+    }
   ]
 }

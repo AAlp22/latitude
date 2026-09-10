@@ -12,9 +12,10 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+
+
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -51,7 +52,7 @@ public class GlobeMod implements ModInitializer {
 
     private static final String SPAWN_CHOSEN_TAG = "globe_spawn_chosen";
 
-    public static final int BORDER_RADIUS = 7500;
+    public static final int BORDER_RADIUS = 50000;
     public static final int POLE_BAND_START_ABS_Z = 12000;
     private static int activePoleBandStartAbsZ = POLE_BAND_START_ABS_Z;
     public static final int POLE_WARNING_DISTANCE_BLOCKS = 256;
@@ -81,25 +82,21 @@ public class GlobeMod implements ModInitializer {
     }
 
 
-    private static final Identifier GLOBE_SETTINGS_ID = Identifier.of(MOD_ID, "overworld");
-    private static final Identifier GLOBE_SETTINGS_XSMALL_ID = Identifier.of(MOD_ID, "overworld_xsmall");
     private static final Identifier GLOBE_SETTINGS_SMALL_ID = Identifier.of(MOD_ID, "overworld_small");
+    private static final Identifier GLOBE_SETTINGS_MEDIUM_ID = Identifier.of(MOD_ID, "overworld_medium");
     private static final Identifier GLOBE_SETTINGS_REGULAR_ID = Identifier.of(MOD_ID, "overworld_regular");
-
     private static final Identifier GLOBE_SETTINGS_LARGE_ID = Identifier.of(MOD_ID, "overworld_large");
     private static final Identifier GLOBE_SETTINGS_MASSIVE_ID = Identifier.of(MOD_ID, "overworld_massive");
 
-    private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_KEY = RegistryKey.of(net.minecraft.registry.RegistryKeys.CHUNK_GENERATOR_SETTINGS, GLOBE_SETTINGS_ID);
-    private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_XSMALL_KEY = RegistryKey.of(net.minecraft.registry.RegistryKeys.CHUNK_GENERATOR_SETTINGS, GLOBE_SETTINGS_XSMALL_ID);
     private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_SMALL_KEY = RegistryKey.of(net.minecraft.registry.RegistryKeys.CHUNK_GENERATOR_SETTINGS, GLOBE_SETTINGS_SMALL_ID);
+    private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_MEDIUM_KEY = RegistryKey.of(net.minecraft.registry.RegistryKeys.CHUNK_GENERATOR_SETTINGS, GLOBE_SETTINGS_MEDIUM_ID);
     private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_REGULAR_KEY = RegistryKey.of(net.minecraft.registry.RegistryKeys.CHUNK_GENERATOR_SETTINGS, GLOBE_SETTINGS_REGULAR_ID);
-
     private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_LARGE_KEY = RegistryKey.of(net.minecraft.registry.RegistryKeys.CHUNK_GENERATOR_SETTINGS, GLOBE_SETTINGS_LARGE_ID);
     private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_MASSIVE_KEY = RegistryKey.of(net.minecraft.registry.RegistryKeys.CHUNK_GENERATOR_SETTINGS, GLOBE_SETTINGS_MASSIVE_ID);
 
     @Override
     public void onInitialize() {
-        LOGGER.info("{} initialized. Use the globe:globe world preset for deterministic terrain.", MOD_ID);
+        LOGGER.info("{} initialized. Use the globe:globe_regular world preset for deterministic terrain.", MOD_ID);
 
         logBuildMetadata("server");
 
@@ -142,20 +139,6 @@ public class GlobeMod implements ModInitializer {
             boolean isBrandNewWorld = overworld.getTime() < 100L;
 
             String pendingZone = server.isDedicated() ? null : GlobePending.consume();
-
-            boolean startWithCompass = !server.isDedicated() && GlobePending.startWithCompass;
-            if (isGlobe && !server.isDedicated() && !StartCompass.hasReceived(handler.player)) {
-                if (!startWithCompass) {
-                    StartCompass.markReceived(handler.player);
-                } else if (hasCompassAnywhere(handler.player)) {
-                    StartCompass.markReceived(handler.player);
-                } else {
-                    boolean given = handler.player.giveItemStack(new ItemStack(Items.COMPASS));
-                    if (given) {
-                        StartCompass.markReceived(handler.player);
-                    }
-                }
-            }
 
             if (isGlobe && !worldState.isSpawnPickerDismissed() && isBrandNewWorld) {
                 if (pendingZone != null) {
@@ -236,6 +219,7 @@ public class GlobeMod implements ModInitializer {
             return;
         }
 
+        LatitudeBiomes.setActiveBiomeRegistry(overworld.getRegistryManager().get(RegistryKeys.BIOME));
         long seed = overworld.getServer().getSaveProperties().getGeneratorOptions().getSeed();
         LatitudeBiomes.setWorldSeed(seed);
 
@@ -340,13 +324,12 @@ public class GlobeMod implements ModInitializer {
         }
     }
 
-    private static boolean isGlobeOverworld(ServerWorld world) {
+    public static boolean isGlobeOverworld(ServerWorld world) {
         ChunkGenerator gen = world.getChunkManager().getChunkGenerator();
         if (!(gen instanceof NoiseChunkGenerator noise)) return false;
 
-        return noise.matchesSettings(GLOBE_SETTINGS_KEY)
-                || noise.matchesSettings(GLOBE_SETTINGS_XSMALL_KEY)
-                || noise.matchesSettings(GLOBE_SETTINGS_SMALL_KEY)
+        return noise.matchesSettings(GLOBE_SETTINGS_SMALL_KEY)
+                || noise.matchesSettings(GLOBE_SETTINGS_MEDIUM_KEY)
                 || noise.matchesSettings(GLOBE_SETTINGS_REGULAR_KEY)
                 || noise.matchesSettings(GLOBE_SETTINGS_LARGE_KEY)
                 || noise.matchesSettings(GLOBE_SETTINGS_MASSIVE_KEY);
@@ -356,12 +339,11 @@ public class GlobeMod implements ModInitializer {
         ChunkGenerator gen = world.getChunkManager().getChunkGenerator();
         if (!(gen instanceof NoiseChunkGenerator noise)) return BORDER_RADIUS;
 
-        if (noise.matchesSettings(GLOBE_SETTINGS_KEY)) return 15000;
-        if (noise.matchesSettings(GLOBE_SETTINGS_XSMALL_KEY)) return 3750;
-        if (noise.matchesSettings(GLOBE_SETTINGS_SMALL_KEY)) return 5000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_SMALL_KEY)) return 12500;
+        if (noise.matchesSettings(GLOBE_SETTINGS_MEDIUM_KEY)) return 25000;
         if (noise.matchesSettings(GLOBE_SETTINGS_REGULAR_KEY)) return BORDER_RADIUS;
-        if (noise.matchesSettings(GLOBE_SETTINGS_LARGE_KEY)) return 10000;
-        if (noise.matchesSettings(GLOBE_SETTINGS_MASSIVE_KEY)) return 20000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_LARGE_KEY)) return 100000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_MASSIVE_KEY)) return 200000;
 
         return BORDER_RADIUS;
     }
@@ -634,23 +616,5 @@ public class GlobeMod implements ModInitializer {
         long mixed = seed ^ 0x9E3779B97F4A7C15L;
         int idx = Math.floorMod(mixed, options.length);
         return options[idx];
-    }
-
-    private static boolean hasCompassAnywhere(ServerPlayerEntity player) {
-        if (player == null) return false;
-        var inv = player.getInventory();
-        for (int i = 0; i < inv.size(); i++) {
-            if (containsCompass(inv.getStack(i), 0)) return true;
-        }
-        return false;
-    }
-
-    private static boolean containsCompass(ItemStack stack, int depth) {
-        if (stack == null || stack.isEmpty()) return false;
-        if (stack.isOf(Items.COMPASS)) return true;
-
-        if (depth >= 6) return false;
-
-        return false;
     }
 }
