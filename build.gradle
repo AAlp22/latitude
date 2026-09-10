@@ -66,6 +66,9 @@ dependencies {
     
     // ModMenu API (compile-time only, optional at runtime)
     modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
 }
 
 processResources {
@@ -78,6 +81,10 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
         it.options.release = 17
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }
 
 java {
