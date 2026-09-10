@@ -47,6 +47,79 @@ public final class LatitudeCoordinateTopology {
         return new Coordinate(wrappedX, foldedMeridional, latitude, longitude, northPole, southPole);
     }
 
+    public MovementResult mapMovement(double currentXBlocks, double currentMeridionalBlocks,
+                                      double targetXBlocks, double targetMeridionalBlocks,
+                                      double maxCrossingStepBlocks) {
+        requireFinite(currentXBlocks, "currentXBlocks");
+        requireFinite(currentMeridionalBlocks, "currentMeridionalBlocks");
+        requireFinite(targetXBlocks, "targetXBlocks");
+        requireFinite(targetMeridionalBlocks, "targetMeridionalBlocks");
+        requirePositiveFinite(maxCrossingStepBlocks, "maxCrossingStepBlocks");
+
+        boolean currentXCanonical = currentXBlocks >= -halfCircumferenceBlocks
+                && currentXBlocks < halfCircumferenceBlocks;
+        boolean currentMeridionalCanonical = currentMeridionalBlocks >= 0.0
+                && currentMeridionalBlocks <= poleToPoleBlocks;
+        boolean crossesLongitude = targetXBlocks < -halfCircumferenceBlocks
+                || targetXBlocks >= halfCircumferenceBlocks;
+        boolean crossesPole = targetMeridionalBlocks < 0.0
+                || targetMeridionalBlocks > poleToPoleBlocks;
+
+        boolean nearLongitudeBoundary = currentXCanonical
+                && (currentXBlocks - (-halfCircumferenceBlocks) <= maxCrossingStepBlocks
+                || halfCircumferenceBlocks - currentXBlocks <= maxCrossingStepBlocks);
+        boolean nearPoleBoundary = currentMeridionalCanonical
+                && (currentMeridionalBlocks <= maxCrossingStepBlocks
+                || poleToPoleBlocks - currentMeridionalBlocks <= maxCrossingStepBlocks);
+        boolean smallHorizontalStep = Math.hypot(
+                targetXBlocks - currentXBlocks,
+                targetMeridionalBlocks - currentMeridionalBlocks) <= maxCrossingStepBlocks;
+
+        if (crossesLongitude && crossesPole) {
+            return MovementResult.rejected(Rejection.MULTIPLE_SEAMS);
+        }
+        if ((crossesLongitude && !nearLongitudeBoundary)
+                || (crossesPole && !nearPoleBoundary)
+                || ((crossesLongitude || crossesPole) && !smallHorizontalStep)) {
+            return MovementResult.rejected(Rejection.OUT_OF_BOUNDS);
+        }
+
+        return MovementResult.accepted(
+                map(targetXBlocks, targetMeridionalBlocks), crossesLongitude, crossesPole);
+    }
+
+    public MovementResult mapMovementWithLongitudeTrigger(double currentXBlocks, double currentMeridionalBlocks,
+                                                           double targetXBlocks, double targetMeridionalBlocks,
+                                                           double maxCrossingStepBlocks,
+                                                           double triggerMarginBlocks) {
+        requirePositiveFinite(triggerMarginBlocks, "triggerMarginBlocks");
+        if (triggerMarginBlocks >= halfCircumferenceBlocks) {
+            throw new IllegalArgumentException("triggerMarginBlocks must be smaller than half the circumference");
+        }
+
+        boolean targetAlreadyOutside = targetXBlocks < -halfCircumferenceBlocks
+                || targetXBlocks >= halfCircumferenceBlocks;
+        if (targetAlreadyOutside) {
+            return mapMovement(currentXBlocks, currentMeridionalBlocks,
+                    targetXBlocks, targetMeridionalBlocks, maxCrossingStepBlocks);
+        }
+
+        boolean movingEastIntoTrigger = targetXBlocks > currentXBlocks
+                && targetXBlocks >= halfCircumferenceBlocks - triggerMarginBlocks;
+        boolean movingWestIntoTrigger = targetXBlocks < currentXBlocks
+                && targetXBlocks < -halfCircumferenceBlocks + triggerMarginBlocks;
+        if (!movingEastIntoTrigger && !movingWestIntoTrigger) {
+            return mapMovement(currentXBlocks, currentMeridionalBlocks,
+                    targetXBlocks, targetMeridionalBlocks, maxCrossingStepBlocks);
+        }
+
+        double virtualTargetX = movingEastIntoTrigger
+                ? targetXBlocks + triggerMarginBlocks
+                : targetXBlocks - triggerMarginBlocks;
+        return mapMovement(currentXBlocks, currentMeridionalBlocks,
+                virtualTargetX, targetMeridionalBlocks, maxCrossingStepBlocks);
+    }
+
     public double wrapX(double xBlocks) {
         requireFinite(xBlocks, "xBlocks");
         return positiveModulo(xBlocks + halfCircumferenceBlocks, circumferenceBlocks)
@@ -83,6 +156,28 @@ public final class LatitudeCoordinateTopology {
     private static void requireFinite(double value, String name) {
         if (!Double.isFinite(value)) {
             throw new IllegalArgumentException(name + " must be finite");
+        }
+    }
+
+    public enum Rejection {
+        NONE,
+        OUT_OF_BOUNDS,
+        MULTIPLE_SEAMS
+    }
+
+    public record MovementResult(
+            boolean accepted,
+            boolean crossedLongitude,
+            boolean crossedPole,
+            Coordinate coordinate,
+            Rejection rejection
+    ) {
+        private static MovementResult accepted(Coordinate coordinate, boolean crossedLongitude, boolean crossedPole) {
+            return new MovementResult(true, crossedLongitude, crossedPole, coordinate, Rejection.NONE);
+        }
+
+        private static MovementResult rejected(Rejection rejection) {
+            return new MovementResult(false, false, false, null, rejection);
         }
     }
 
