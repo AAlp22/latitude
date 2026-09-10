@@ -23,6 +23,7 @@
   "client": [
     "client.FogRendererMixin",
     "client.ClientWorldLatitudeSkyMixin",
+    "client.WorldRendererLatitudeSunMixin",
     "client.LunarWorldViewLatitudeSkyMixin",
     "client.BiomeColorsLatitudeMixin",
     "client.CreateWorldScreenLatitudeToggleMixin",
