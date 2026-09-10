@@ -18,7 +18,6 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeSource;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -63,7 +62,6 @@ public abstract class ChunkGeneratorBiomeSourceMixin {
             RegistryKey.of(RegistryKeys.CHUNK_GENERATOR_SETTINGS, GLOBE_SETTINGS_MASSIVE_ID);
     @Shadow
     @Final
-    @Mutable
     private BiomeSource biomeSource;
 
     @org.spongepowered.asm.mixin.Unique
@@ -72,13 +70,11 @@ public abstract class ChunkGeneratorBiomeSourceMixin {
     @Inject(method = "<init>(Lnet/minecraft/world/biome/source/BiomeSource;)V", at = @At("TAIL"), require = 0)
     private void globe$wrapBiomeSource(BiomeSource biomeSource, CallbackInfo ci) {
         globe$maybeWrapBiomeSource();
-        globe$installWrappedFieldIfSafe();
     }
 
     @Inject(method = "<init>(Lnet/minecraft/world/biome/source/BiomeSource;Ljava/util/function/Function;)V", at = @At("TAIL"), require = 0)
     private void globe$wrapBiomeSource(BiomeSource biomeSource, java.util.function.Function<?, ?> settingsLookup, CallbackInfo ci) {
         globe$maybeWrapBiomeSource();
-        globe$installWrappedFieldIfSafe();
     }
 
     @Inject(
@@ -93,7 +89,6 @@ public abstract class ChunkGeneratorBiomeSourceMixin {
             LatitudeBiomes.setActiveBiomeRegistry(registry);
         }
         globe$maybeWrapBiomeSource();
-        globe$installWrappedFieldIfSafe();
     }
 
     /**
@@ -125,14 +120,6 @@ public abstract class ChunkGeneratorBiomeSourceMixin {
                 GlobeMod.LOGGER.warn("[Latitude] unable to inspect Biolith dimension-type handoff; keeping original biome source", e);
             }
             return false;
-        }
-    }
-
-    private void globe$installWrappedFieldIfSafe() {
-        if (this.globe$wrappedBiomeSource != null
-                && !(this.biomeSource instanceof LatitudeBiomeSource)
-                && globe$canExposeWrappedBiomeSource()) {
-            this.biomeSource = this.globe$wrappedBiomeSource;
         }
     }
 

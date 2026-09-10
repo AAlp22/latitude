@@ -17,8 +17,10 @@ import net.minecraft.world.gen.noise.NoiseConfig;
 import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(NoiseChunkGenerator.class)
@@ -34,6 +36,9 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
     private static final RegistryKey<ChunkGeneratorSettings> GLOBE_SETTINGS_MASSIVE =
             RegistryKey.of(RegistryKeys.CHUNK_GENERATOR_SETTINGS, Identifier.of("globe", "overworld_massive"));
 
+    @Unique
+    private BiomeSource globe$populationBiomeSource;
+
     @Shadow
     public abstract boolean matchesSettings(RegistryKey<ChunkGeneratorSettings> settings);
 
@@ -41,7 +46,7 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
             method = "populateBiomes(Lnet/minecraft/world/gen/chunk/Blender;Lnet/minecraft/world/gen/noise/NoiseConfig;Lnet/minecraft/world/gen/StructureAccessor;Lnet/minecraft/world/chunk/Chunk;)V",
             at = @At("HEAD")
     )
-    private void globe$installAuthoritativeBiomeSource(Blender blender, NoiseConfig noiseConfig,
+    private void globe$prepareAuthoritativeBiomeSource(Blender blender, NoiseConfig noiseConfig,
                                                         StructureAccessor structureAccessor, Chunk chunk,
                                                         CallbackInfo ci) {
         ChunkGeneratorBiomeSourceAccessor sourceAccessor = (ChunkGeneratorBiomeSourceAccessor) (Object) this;
@@ -56,13 +61,25 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
         }
 
         BiomeSource original = current;
-        sourceAccessor.globe$setBiomeSource(new LatitudeBiomeSource(
+        this.globe$populationBiomeSource = new LatitudeBiomeSource(
                 original,
                 original::getBiomes,
-                globe$borderRadiusBlocks()));
+                globe$borderRadiusBlocks());
         if (Boolean.getBoolean("latitude.debugWorldgenPath")) {
-            GlobeMod.LOGGER.info("[Latitude] installed one authoritative biome source before vanilla biome population");
+            GlobeMod.LOGGER.info("[Latitude] selected a runtime biome source for vanilla biome population without mutating generator settings");
         }
+    }
+
+    @Redirect(
+            method = "populateBiomes(Lnet/minecraft/world/gen/chunk/Blender;Lnet/minecraft/world/gen/noise/NoiseConfig;Lnet/minecraft/world/gen/StructureAccessor;Lnet/minecraft/world/chunk/Chunk;)V",
+            at = @At(
+                    value = "FIELD",
+                    target = "Lnet/minecraft/world/gen/chunk/NoiseChunkGenerator;biomeSource:Lnet/minecraft/world/biome/source/BiomeSource;"
+            )
+    )
+    private BiomeSource globe$usePopulationBiomeSource(NoiseChunkGenerator generator) {
+        BiomeSource runtimeSource = this.globe$populationBiomeSource;
+        return runtimeSource != null ? runtimeSource : generator.getBiomeSource();
     }
 
     private boolean globe$isLatitudeSettings() {

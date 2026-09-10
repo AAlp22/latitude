@@ -9,7 +9,4 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface ChunkGeneratorBiomeSourceAccessor {
     @Accessor("biomeSource")
     BiomeSource globe$getBiomeSource();
-
-    @Accessor("biomeSource")
-    void globe$setBiomeSource(BiomeSource biomeSource);
 }

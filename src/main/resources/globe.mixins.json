@@ -9,7 +9,6 @@
     "ServerPlayNetworkHandlerLatitudeTopologyMixin",
     "BiomeSourceAccessor",
     "ChunkGeneratorBiomeSourceAccessor",
-    "ChunkGeneratorBiomeSourceMixin",
     "WorldViewLatitudeContextMixin",
     "BlockRenderViewLatitudeLightMixin",
     "BiomeNoSnowInWarmBandsMixin",

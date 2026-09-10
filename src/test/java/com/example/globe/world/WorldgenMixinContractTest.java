@@ -29,11 +29,21 @@ class WorldgenMixinContractTest {
     }
 
     @Test
-    void generatorGetterDoesNotInstallWrapperDuringSettingsSerialization() throws IOException {
-        Path sourcePath = Path.of("src/main/java/com/example/globe/mixin/ChunkGeneratorBiomeSourceMixin.java");
+    void legacyGeneratorWrapperMixinIsNotRegistered() throws IOException {
+        Path mixinPath = Path.of("src/main/resources/globe.mixins.json");
+        String mixins = Files.readString(mixinPath);
+
+        assertFalse(mixins.contains("\"ChunkGeneratorBiomeSourceMixin\""));
+    }
+
+    @Test
+    void noisePopulationUsesASeparateRuntimeSourceWithoutMutatingGeneratorState() throws IOException {
+        Path sourcePath = Path.of("src/main/java/com/example/globe/mixin/ChunkGeneratorPopulateBiomesMixin.java");
         String source = Files.readString(sourcePath);
 
-        assertFalse(source.contains("method = \"getBiomeSource\""));
-        assertFalse(source.contains("globe$returnWrappedBiomeSource"));
+        assertTrue(source.contains("globe$populationBiomeSource"));
+        assertTrue(source.contains("@Redirect"));
+        assertTrue(source.contains("NoiseChunkGenerator;biomeSource:Lnet/minecraft/world/biome/source/BiomeSource;"));
+        assertFalse(source.contains("globe$setBiomeSource"));
     }
 }
