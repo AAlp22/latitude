@@ -53,3 +53,27 @@ Therefore the current pole path is a bounded player traversal illusion, not a sp
 Do not add broad entity/chunk/packet/collision mixins to the normal Latitude build yet. First manually validate the opt-in player-only path in a disposable fresh world. If it works, the next isolated experiment should target a packet/accounting design with a declared supported object set, not a global `Entity.move` hook. Keep all broader seam behavior behind a separate experimental mode and preserve the current bounded fallback.
 
 Static build success, generated refmaps, and this audit do not prove runtime seam continuity.
+
+## Pure seam-coordinate layer added
+
+`LatitudeSeamCoordinateFrame` is now a production-side pure math helper with focused tests. It provides:
+
+- centered half-open canonical X coordinates;
+- nearest periodic entity/absolute-packet images relative to an observer;
+- exact integer block-coordinate translations when the circumference is integral;
+- whole-chunk translations only when both world-border boundaries are exact chunk boundaries;
+- explicit rejection values for unaligned borders, non-integral block circumferences, and arithmetic overflow.
+
+This is deliberately not registered as a packet or entity Mixin. It defines the coordinate contract that a future client/server transport layer would need without claiming that native Minecraft packets already support it.
+
+For the configured centered globe sizes, the chunk-boundary audit is:
+
+| Diameter | West/east boundary alignment | Whole-chunk frame |
+|---:|---|---|
+| 25,000 | boundaries at ±12,500; not 16-block aligned | rejected |
+| 50,000 | boundaries at ±25,000; not 16-block aligned | rejected |
+| 100,000 | boundaries at ±50,000; aligned | mathematically possible |
+| 200,000 | boundaries at ±100,000; aligned | mathematically possible |
+| 400,000 | boundaries at ±200,000; aligned | mathematically possible |
+
+Even the aligned cases still require coordinated packet rewriting and client chunk-state ownership; alignment alone is not runtime seam support.
