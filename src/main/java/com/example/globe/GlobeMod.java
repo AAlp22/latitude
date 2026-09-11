@@ -2,7 +2,6 @@ package com.example.globe;
 
 import net.fabricmc.api.ModInitializer;
 import com.example.globe.world.LatitudeBiomes;
-import com.example.globe.world.BiomeFeatureStripping;
 import com.example.globe.world.LatitudeWorldState;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -101,7 +100,6 @@ public class GlobeMod implements ModInitializer {
         logBuildMetadata("server");
 
         GlobeNet.registerPayloads();
-        BiomeFeatureStripping.init();
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(CommandManager.literal("flyspeed")

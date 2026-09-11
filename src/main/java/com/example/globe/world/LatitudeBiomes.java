@@ -1059,13 +1059,6 @@ public final class LatitudeBiomes {
             }
 
             if (base.isIn(BiomeTags.IS_RIVER)) {
-                if (LatitudeBiomeCompatibility.shouldPreserveEcoFloatingRiver(biomeId(base), bandIndex >= 3)) {
-                    debugPick(blockX, blockZ, effectiveRadius, t, band, base, base, false, false, null);
-                    if (DEBUG_BIOME_COST) {
-                        bioCostTagChecksNs += System.nanoTime() - bioTagStartNs;
-                    }
-                    return base;
-                }
                 if (DEBUG_BIOME_COST) {
                     bioCostTagChecksNs += System.nanoTime() - bioTagStartNs;
                 }
@@ -1389,10 +1382,6 @@ public final class LatitudeBiomes {
         }
 
         if (base.isIn(BiomeTags.IS_RIVER)) {
-            if (LatitudeBiomeCompatibility.shouldPreserveEcoFloatingRiver(biomeId(base), bandIndex >= 3)) {
-                debugPick(blockX, blockZ, effectiveRadius, t, band, base, base, false, false, null);
-                return base;
-            }
             if (bandIndex >= 3) {
                 RegistryEntry<Biome> frozen = entryById(biomePool, "minecraft:frozen_river");
                 RegistryEntry<Biome> out = frozen != null ? frozen : base;
