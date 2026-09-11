@@ -187,6 +187,20 @@ public final class LatitudeWorldLauncher {
 
             LOGGER.info("[Latitude lifecycle] session created — {}ms elapsed", System.currentTimeMillis() - t0);
 
+            if (!screen.copyDataPacksToSession(session)) {
+                LOGGER.error("Aborting world start because Latitude data-pack copy failed");
+                try {
+                    session.close();
+                } catch (Exception closeEx) {
+                    LOGGER.warn("Failed to close session after data-pack copy failure", closeEx);
+                }
+                if (isLatitude) {
+                    clearLatitudeLoadingState();
+                }
+                client.setScreen(screen);
+                return;
+            }
+
             // ── 10. Write Latitude state (latest safe point — after session, before launch) ──
             if (isLatitude) {
                 GlobeWorldSizeSelection.set(size);

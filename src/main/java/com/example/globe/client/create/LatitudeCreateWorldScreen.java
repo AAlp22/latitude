@@ -7,6 +7,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.MessageScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.gui.screen.pack.PackScreen;
 import net.minecraft.client.gui.screen.world.EditGameRulesScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
@@ -23,20 +24,28 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
+import net.minecraft.util.WorldSavePath;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.gen.GeneratorOptions;
 import net.minecraft.world.gen.WorldPresets;
 import net.minecraft.world.level.WorldGenSettings;
+import net.minecraft.world.level.storage.LevelStorage;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 public class LatitudeCreateWorldScreen extends Screen {
 
@@ -111,7 +120,10 @@ public class LatitudeCreateWorldScreen extends Screen {
     private final Runnable onClose;
     @Nullable
     private final Screen parent;
-    private final GeneratorOptionsHolder holder;
+    private GeneratorOptionsHolder holder;
+    @Nullable
+    private Path dataPackTempDir;
+    private boolean dataPackReloading;
 
     // ── Local UI state (fresh each open) ──
     private GlobeWorldSize selectedSize = DEFAULT_SIZE;
@@ -137,6 +149,7 @@ public class LatitudeCreateWorldScreen extends Screen {
     private ButtonWidget modePrevBtn;
     private ButtonWidget modeNextBtn;
     private ButtonWidget gameRulesBtn;
+    private ButtonWidget dataPacksBtn;
 
     // ── Layout cache (computed in init, used in render) ──
     private int headerY;
@@ -191,6 +204,7 @@ public class LatitudeCreateWorldScreen extends Screen {
     private int commandsRowY;
     private int bonusChestRowY;
     private int gameRulesRowY;
+    private int dataPacksRowY;
 
     // ── Tabbed fallback mode (activates when 3-col doesn't fit) ──
     private boolean tabbedMode;
@@ -331,8 +345,8 @@ public class LatitudeCreateWorldScreen extends Screen {
         // Frozen tab order — widgets added in exact sequence:
         // 1. World Name  2. Seed  3. Size ◀  4. Size ▶
         // 5–9. Zone rows (Tropical → Polar)
-        // 10–18. Settings rail
-        // 17. Begin Expedition  18. Cancel
+        // 10–17. Settings rail
+        // 18. Begin Expedition  19. Cancel
         // ═══════════════════════════════════════════════
 
         // ── 1. World Name ──
@@ -412,6 +426,11 @@ public class LatitudeCreateWorldScreen extends Screen {
                     .dimensions(settBtnX, panelTop, settBtnW, btnH)
                     .build();
             this.addDrawableChild(gameRulesBtn);
+
+            dataPacksBtn = ButtonWidget.builder(Text.literal("Data Packs..."), b -> openDataPacks())
+                    .dimensions(settBtnX, panelTop, settBtnW, btnH)
+                    .build();
+            this.addDrawableChild(dataPacksBtn);
 
             updateSettingsLayout();
         }
@@ -720,10 +739,13 @@ public class LatitudeCreateWorldScreen extends Screen {
         if (gameRulesBtn != null) {
             gameRulesBtn.active = gameRulesBtn.visible;
         }
+        if (dataPacksBtn != null) {
+            dataPacksBtn.active = dataPacksBtn.visible && !dataPackReloading;
+        }
     }
 
     private void updateSettingsLayout() {
-        if (worldTypePrevBtn == null || worldTypeNextBtn == null || modePrevBtn == null || modeNextBtn == null || commandsBtn == null || bonusChestBtn == null || gameRulesBtn == null) {
+        if (worldTypePrevBtn == null || worldTypeNextBtn == null || modePrevBtn == null || modeNextBtn == null || commandsBtn == null || bonusChestBtn == null || gameRulesBtn == null || dataPacksBtn == null) {
             settingsViewportTop = 0;
             settingsViewportBottom = 0;
             settingsContentHeight = 0;
@@ -740,7 +762,7 @@ public class LatitudeCreateWorldScreen extends Screen {
         int viewportHeight = Math.max(0, settingsViewportBottom - settingsViewportTop);
         int contentTop = settingsViewportTop + scaledUi(4);
         int blockHeight = labelGap + btnH;
-        settingsContentHeight = blockHeight * 5 + rowGap * 4;
+        settingsContentHeight = blockHeight * 6 + rowGap * 5;
         int maxScroll = Math.max(0, settingsContentHeight - viewportHeight);
         if (settingsScroll < 0) settingsScroll = 0;
         if (settingsScroll > maxScroll) settingsScroll = maxScroll;
@@ -763,6 +785,10 @@ public class LatitudeCreateWorldScreen extends Screen {
         y += btnH + rowGap + labelGap;
         gameRulesRowY = y;
         positionSettingsButton(gameRulesBtn, settBtnX, settBtnW, y, btnH);
+
+        y += btnH + rowGap + labelGap;
+        dataPacksRowY = y;
+        positionSettingsButton(dataPacksBtn, settBtnX, settBtnW, y, btnH);
 
         updateSettingsButtons();
     }
@@ -789,6 +815,7 @@ public class LatitudeCreateWorldScreen extends Screen {
         setTabbedWidgetVisible(commandsBtn, showRules);
         setTabbedWidgetVisible(bonusChestBtn, showRules && !isLatitudeWorld());
         setTabbedWidgetVisible(gameRulesBtn, showRules);
+        setTabbedWidgetVisible(dataPacksBtn, showRules);
     }
 
     private void setTabbedWidgetVisible(ClickableWidget widget, boolean visible) {
@@ -829,6 +856,152 @@ public class LatitudeCreateWorldScreen extends Screen {
         button.active = visible;
     }
 
+    private void openDataPacks() {
+        if (this.client == null || this.dataPackReloading) return;
+        Path tempDir = getDataPackTempDir();
+        if (tempDir == null) return;
+
+        try {
+            ResourcePackManager resourcePackManager = VanillaDataPackProvider.createManager(tempDir);
+            resourcePackManager.scanPacks();
+            resourcePackManager.setEnabledProfiles(this.holder.dataConfiguration().dataPacks().getEnabled());
+            ensureRequiredDataPacks(resourcePackManager);
+            this.client.setScreen(new PackScreen(
+                    resourcePackManager,
+                    this::applyDataPacks,
+                    tempDir,
+                    Text.translatable("dataPack.title")));
+        } catch (RuntimeException e) {
+            LOGGER.error("Failed to open Latitude data-pack screen", e);
+        }
+    }
+
+    private void ensureRequiredDataPacks(ResourcePackManager resourcePackManager) {
+        List<String> enabled = new ArrayList<>(resourcePackManager.getEnabledNames());
+        if (!enabled.contains("vanilla")) {
+            enabled.add(0, "vanilla");
+        }
+        if (!enabled.contains("globe")) {
+            enabled.add("globe");
+        }
+        resourcePackManager.setEnabledProfiles(enabled);
+    }
+
+    @Nullable
+    private Path getDataPackTempDir() {
+        if (this.dataPackTempDir == null) {
+            try {
+                this.dataPackTempDir = Files.createTempDirectory("latitude-datapacks-");
+            } catch (IOException e) {
+                LOGGER.error("Failed to create Latitude data-pack temporary directory", e);
+                return null;
+            }
+        }
+        return this.dataPackTempDir;
+    }
+
+    boolean copyDataPacksToSession(LevelStorage.Session session) {
+        Path tempDir = this.dataPackTempDir;
+        if (tempDir == null) return true;
+
+        try {
+            Path destination = session.getDirectory(WorldSavePath.DATAPACKS);
+            Files.createDirectories(destination);
+            try (Stream<Path> paths = Files.walk(tempDir)) {
+                paths.filter(path -> !path.equals(tempDir))
+                        .forEach(path -> copyDataPack(tempDir, destination, path));
+            }
+            clearDataPackTempDir();
+            return true;
+        } catch (IOException | UncheckedIOException e) {
+            LOGGER.error("Failed to copy Latitude data packs into the new world", e);
+            return false;
+        }
+    }
+
+    private static void copyDataPack(Path source, Path destination, Path dataPack) {
+        try {
+            Util.relativeCopy(source, destination, dataPack);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private void clearDataPackTempDir() {
+        Path tempDir = this.dataPackTempDir;
+        if (tempDir == null) return;
+        try (Stream<Path> paths = Files.walk(tempDir)) {
+            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (IOException | UncheckedIOException e) {
+            LOGGER.warn("Failed to clear Latitude data-pack temporary directory {}", tempDir, e);
+        } finally {
+            this.dataPackTempDir = null;
+        }
+    }
+
+    private void applyDataPacks(ResourcePackManager resourcePackManager) {
+        if (this.client == null || this.dataPackReloading) return;
+        ensureRequiredDataPacks(resourcePackManager);
+
+        List<String> enabled = new ArrayList<>(resourcePackManager.getEnabledNames());
+        List<String> disabled = new ArrayList<>(resourcePackManager.getNames());
+        disabled.removeAll(enabled);
+        DataConfiguration dataConfiguration = new DataConfiguration(
+                new DataPackSettings(List.copyOf(enabled), List.copyOf(disabled)),
+                this.holder.dataConfiguration().enabledFeatures());
+
+        this.dataPackReloading = true;
+        this.client.setScreenAndRender(new MessageScreen(Text.translatable("dataPack.validation.working")));
+        try {
+            SaveLoading.DataPacks dataPacks = new SaveLoading.DataPacks(
+                    resourcePackManager, dataConfiguration, false, true);
+            SaveLoading.ServerConfig serverConfig = new SaveLoading.ServerConfig(
+                    dataPacks, CommandManager.RegistrationEnvironment.INTEGRATED, 2);
+            CompletableFuture<GeneratorOptionsHolder> future = SaveLoading.load(
+                    serverConfig,
+                    context -> new SaveLoading.LoadContext<>(
+                            new LatitudeWorldCreationSettings(
+                                    new WorldGenSettings(
+                                            GeneratorOptions.createRandom(),
+                                            WorldPresets.createDemoOptions(context.worldGenRegistryManager())),
+                                    context.dataConfiguration()),
+                            context.dimensionsRegistryManager()),
+                    (resourceManager, dataPackContents, dynamicRegistries, settings) -> {
+                        resourceManager.close();
+                        return new GeneratorOptionsHolder(
+                                settings.worldGenSettings(),
+                                dynamicRegistries,
+                                dataPackContents,
+                                settings.dataConfiguration());
+                    },
+                    Util.getMainWorkerExecutor(),
+                    this.client);
+
+            future.handleAsync((reloadedHolder, failure) -> {
+                if (failure != null) {
+                    LOGGER.error("Failed to reload Latitude data packs", failure);
+                } else {
+                    this.holder = reloadedHolder;
+                }
+                this.dataPackReloading = false;
+                if (this.client != null) {
+                    this.client.setScreen(this);
+                }
+                return null;
+            }, this.client);
+        } catch (RuntimeException e) {
+            this.dataPackReloading = false;
+            LOGGER.error("Failed to reload Latitude data packs", e);
+            this.client.setScreen(this);
+        }
+    }
+
     private void openGameRules() {
         if (this.client == null) return;
         this.client.setScreen(new EditGameRulesScreen(this.gameRules, optional -> {
@@ -859,6 +1032,7 @@ public class LatitudeCreateWorldScreen extends Screen {
 
     @Override
     public void close() {
+        clearDataPackTempDir();
         this.onClose.run();
         if (this.client != null && (this.client.currentScreen == this || this.client.currentScreen == null)) {
             this.client.setScreen(this.parent);
@@ -1115,6 +1289,7 @@ public class LatitudeCreateWorldScreen extends Screen {
             drawSettingsRowLabel(context, "Commands", settLabelX, commandsRowY, MUTED);
             drawSettingsRowLabel(context, "Bonus Chest", settLabelX, bonusChestRowY, isLatitudeWorld() ? DISABLED_COLOR : MUTED);
             drawSettingsRowLabel(context, "Game Rules", settLabelX, gameRulesRowY, MUTED);
+            drawSettingsRowLabel(context, "Data Packs", settLabelX, dataPacksRowY, MUTED);
             context.disableScissor();
             }
             drawPaneScrollbar(context, railX, railW, settingsViewportTop, settingsViewportBottom, settingsContentHeight, settingsScroll);
