@@ -1011,6 +1011,9 @@ public final class LatitudeBiomes {
                     : surfaceDecisionY(generator, noiseConfig, heightView, blockX, blockZ);
             int biomeY = (blockY < columnDecisionY - 16) ? blockY : columnDecisionY;
             assertSurfaceY(biomeY);
+            if (blockY < columnDecisionY - 16 && isVanillaCaveBiome(base)) {
+                return base;
+            }
             if (DEBUG_BIOME_COST) {
                 bioCostTopYSetupNs += System.nanoTime() - bioTopYStartNs;
             }
@@ -1355,6 +1358,9 @@ public final class LatitudeBiomes {
         int columnDecisionY = surfaceDecisionY(generator, noiseConfig, heightView, blockX, blockZ);
         int biomeY = (blockY < columnDecisionY - 16) ? blockY : columnDecisionY;
         assertSurfaceY(biomeY);
+        if (blockY < columnDecisionY - 16 && isVanillaCaveBiome(base)) {
+            return base;
+        }
         int activeRadius = ACTIVE_RADIUS_BLOCKS;
         boolean overrideDisabled = DISABLE_RADIUS_OVERRIDE;
 
@@ -2855,6 +2861,12 @@ public final class LatitudeBiomes {
         return entry.getKey()
                 .map(key -> key.getValue().equals(target))
                 .orElse(false);
+    }
+
+    private static boolean isVanillaCaveBiome(RegistryEntry<Biome> entry) {
+        return isBiomeId(entry, "minecraft:dripstone_caves")
+                || isBiomeId(entry, "minecraft:lush_caves")
+                || isBiomeId(entry, "minecraft:deep_dark");
     }
 
     private static String biomeId(RegistryEntry<Biome> entry) {

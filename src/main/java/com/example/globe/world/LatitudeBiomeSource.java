@@ -42,7 +42,7 @@ public final class LatitudeBiomeSource extends BiomeSource {
 
     @Override
     public RegistryEntry<Biome> getBiome(int x, int y, int z, MultiNoiseUtil.MultiNoiseSampler sampler) {
-        RegistryEntry<Biome> base = original.getBiome(x, 0, z, sampler);
+        RegistryEntry<Biome> base = original.getBiome(x, y, z, sampler);
         int blockX = x << 2;
         int blockZ = z << 2;
         int blockY = y << 2;

@@ -29,6 +29,18 @@ class WorldgenMixinContractTest {
     }
 
     @Test
+    void latitudeCaveRepairUsesRequestedYAndOnlyPreservesUndergroundCaves() throws IOException {
+        String source = Files.readString(
+                Path.of("src/main/java/com/example/globe/world/LatitudeBiomeSource.java"));
+        String selector = Files.readString(
+                Path.of("src/main/java/com/example/globe/world/LatitudeBiomes.java"));
+
+        assertTrue(source.contains("original.getBiome(x, y, z, sampler)"));
+        assertFalse(source.contains("original.getBiome(x, 0, z, sampler)"));
+        assertTrue(selector.contains("blockY < columnDecisionY - 16 && isVanillaCaveBiome(base)"));
+    }
+
+    @Test
     void legacyGeneratorWrapperMixinIsNotRegistered() throws IOException {
         Path mixinPath = Path.of("src/main/resources/globe.mixins.json");
         String mixins = Files.readString(mixinPath);
