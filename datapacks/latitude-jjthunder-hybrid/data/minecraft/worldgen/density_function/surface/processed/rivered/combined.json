@@ -1,5 +1,0 @@
-{
-  "type": "minecraft:add",
-  "argument1": "minecraft:height/processed/rivered/combined",
-  "argument2": "minecraft:baseline/overworld/horizontal"
-}
