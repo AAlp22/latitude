@@ -37,7 +37,7 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
             RegistryKey.of(RegistryKeys.CHUNK_GENERATOR_SETTINGS, Identifier.of("globe", "overworld_massive"));
 
     @Unique
-    private BiomeSource globe$populationBiomeSource;
+    private final ThreadLocal<BiomeSource> globe$populationBiomeSource = new ThreadLocal<>();
 
     @Shadow
     public abstract boolean matchesSettings(RegistryKey<ChunkGeneratorSettings> settings);
@@ -49,6 +49,7 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
     private void globe$prepareAuthoritativeBiomeSource(Blender blender, NoiseConfig noiseConfig,
                                                         StructureAccessor structureAccessor, Chunk chunk,
                                                         CallbackInfo ci) {
+        this.globe$populationBiomeSource.remove();
         ChunkGeneratorBiomeSourceAccessor sourceAccessor = (ChunkGeneratorBiomeSourceAccessor) (Object) this;
         BiomeSource current = sourceAccessor.globe$getBiomeSource();
         if (current instanceof LatitudeBiomeSource || !globe$isLatitudeSettings()) {
@@ -61,13 +62,26 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
         }
 
         BiomeSource original = current;
-        this.globe$populationBiomeSource = new LatitudeBiomeSource(
+        this.globe$populationBiomeSource.set(new LatitudeBiomeSource(
                 original,
                 original::getBiomes,
-                globe$borderRadiusBlocks());
+                globe$borderRadiusBlocks(),
+                (NoiseChunkGenerator) (Object) this,
+                noiseConfig,
+                chunk.getHeightLimitView()));
         if (Boolean.getBoolean("latitude.debugWorldgenPath")) {
             GlobeMod.LOGGER.info("[Latitude] selected a runtime biome source for vanilla biome population without mutating generator settings");
         }
+    }
+
+    @Inject(
+            method = "populateBiomes(Lnet/minecraft/world/gen/chunk/Blender;Lnet/minecraft/world/gen/noise/NoiseConfig;Lnet/minecraft/world/gen/StructureAccessor;Lnet/minecraft/world/chunk/Chunk;)V",
+            at = @At("TAIL")
+    )
+    private void globe$clearPopulationBiomeSource(Blender blender, NoiseConfig noiseConfig,
+                                                    StructureAccessor structureAccessor, Chunk chunk,
+                                                    CallbackInfo ci) {
+        this.globe$populationBiomeSource.remove();
     }
 
     @Redirect(
@@ -78,7 +92,7 @@ public abstract class ChunkGeneratorPopulateBiomesMixin {
             )
     )
     private BiomeSource globe$usePopulationBiomeSource(NoiseChunkGenerator generator) {
-        BiomeSource runtimeSource = this.globe$populationBiomeSource;
+        BiomeSource runtimeSource = this.globe$populationBiomeSource.get();
         return runtimeSource != null ? runtimeSource : generator.getBiomeSource();
     }
 

@@ -30,7 +30,7 @@ def main():
         ("no HUD in-game mixin", "client.InGameHudMixin" not in mixins.get("client", []) and "client.InGameHudMixin" not in mixins.get("mixins", [])),
         ("no compass toggle mixin", "HandledScreenCompassToggleMixin" not in mixins.get("mixins", [])),
         ("biome source lookup is lazy", "this.biomeSource.getBiomes()" not in biome_source_mixin and "Supplier<Collection<RegistryEntry<Biome>>>" in latitude_biome_source),
-        ("wrapped source uses complete biome registry", "LatitudeBiomes.completeBiomePool" in latitude_biome_source),
+        ("wrapped source preserves the original biome pool", "LatitudeBiomes.completeBiomePool" not in latitude_biome_source and "return biomes.get().stream();" in latitude_biome_source),
         ("live registry is published to Latitude", "LatitudeBiomes.setActiveBiomeRegistry" in populate_biomes_mixin),
         ("complete registry pool enumerates registry entries", "streamEntries()" in latitude_biomes),
         ("Biolith dimension-type handoff is preserved", "globe$canExposeWrappedBiomeSource()" in biome_source_mixin and "InterfaceBiomeSource" in biome_source_mixin and "biolith$getDimensionType" in biome_source_mixin),

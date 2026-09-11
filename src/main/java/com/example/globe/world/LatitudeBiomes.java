@@ -332,10 +332,6 @@ public final class LatitudeBiomes {
         ACTIVE_BIOME_POOL = snapshot;
     }
 
-    public static Collection<RegistryEntry<Biome>> completeBiomePool(Collection<RegistryEntry<Biome>> fallback) {
-        Collection<RegistryEntry<Biome>> active = ACTIVE_BIOME_POOL;
-        return active.isEmpty() ? fallback : active;
-    }
 
     public static void setWorldSeed(long seed) {
         WORLD_SEED = seed;
@@ -1011,7 +1007,7 @@ public final class LatitudeBiomes {
                     : surfaceDecisionY(generator, noiseConfig, heightView, blockX, blockZ);
             int biomeY = (blockY < columnDecisionY - 16) ? blockY : columnDecisionY;
             assertSurfaceY(biomeY);
-            if (blockY < columnDecisionY - 16 && isVanillaCaveBiome(base)) {
+            if (blockY < columnDecisionY - 16) {
                 return base;
             }
             if (DEBUG_BIOME_COST) {
@@ -1358,7 +1354,7 @@ public final class LatitudeBiomes {
         int columnDecisionY = surfaceDecisionY(generator, noiseConfig, heightView, blockX, blockZ);
         int biomeY = (blockY < columnDecisionY - 16) ? blockY : columnDecisionY;
         assertSurfaceY(biomeY);
-        if (blockY < columnDecisionY - 16 && isVanillaCaveBiome(base)) {
+        if (blockY < columnDecisionY - 16) {
             return base;
         }
         int activeRadius = ACTIVE_RADIUS_BLOCKS;
@@ -2863,11 +2859,6 @@ public final class LatitudeBiomes {
                 .orElse(false);
     }
 
-    private static boolean isVanillaCaveBiome(RegistryEntry<Biome> entry) {
-        return isBiomeId(entry, "minecraft:dripstone_caves")
-                || isBiomeId(entry, "minecraft:lush_caves")
-                || isBiomeId(entry, "minecraft:deep_dark");
-    }
 
     private static String biomeId(RegistryEntry<Biome> entry) {
         if (entry == null) {
