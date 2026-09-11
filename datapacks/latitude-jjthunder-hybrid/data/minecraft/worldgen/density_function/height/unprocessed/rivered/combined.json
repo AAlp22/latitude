@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:add",
+  "argument1": "minecraft:surface/unprocessed/rivered/combined",
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": "minecraft:baseline/overworld/horizontal",
+    "argument2": -1
+  }
+}

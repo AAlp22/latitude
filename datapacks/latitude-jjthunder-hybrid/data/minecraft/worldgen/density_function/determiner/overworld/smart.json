@@ -1,0 +1,90 @@
+{
+  "type": "minecraft:spline",
+  "spline": {
+    "coordinate": "minecraft:determiner/overworld/1",
+    "points": [
+      {
+        "location": -0.35,
+        "derivative": 0,
+        "value": {
+          "coordinate": "minecraft:determiner/overworld/1",
+          "points": [
+            {
+              "location": 0,
+              "derivative": 1,
+              "value": 0
+            }
+          ]
+        }
+      },
+      {
+        "location": -0.2,
+        "derivative": 0,
+        "value": {
+          "coordinate": {
+            "type": "minecraft:add",
+            "argument1": "minecraft:determiner/overworld/1",
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": {
+                "type": "minecraft:noise",
+                "noise": "minecraft:gravel",
+                "xz_scale": 0.008,
+                "y_scale": 0
+              },
+              "argument2": 0.5
+            }
+          },
+          "points": [
+            {
+              "location": 0,
+              "derivative": 1,
+              "value": 0
+            }
+          ]
+        }
+      },
+      {
+        "location": 0.2,
+        "derivative": 0,
+        "value": {
+          "coordinate": {
+            "type": "minecraft:add",
+            "argument1": "minecraft:determiner/overworld/1",
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": {
+                "type": "minecraft:noise",
+                "noise": "minecraft:gravel",
+                "xz_scale": 0.008,
+                "y_scale": 0
+              },
+              "argument2": 0.5
+            }
+          },
+          "points": [
+            {
+              "location": 0,
+              "derivative": 1,
+              "value": 0
+            }
+          ]
+        }
+      },
+      {
+        "location": 0.35,
+        "derivative": 0,
+        "value": {
+          "coordinate": "minecraft:determiner/overworld/1",
+          "points": [
+            {
+              "location": 0,
+              "derivative": 1,
+              "value": 0
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

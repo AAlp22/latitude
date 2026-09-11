@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:add",
+  "argument1": {
+    "type": "minecraft:y_clamped_gradient",
+    "from_y": -256,
+    "to_y": 1016,
+    "from_value": 1,
+    "to_value": -1
+  },
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": "minecraft:new_surface/height/processed",
+    "argument2": -1.6
+  }
+}

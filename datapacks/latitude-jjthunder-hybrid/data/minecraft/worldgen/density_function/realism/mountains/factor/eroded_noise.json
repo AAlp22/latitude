@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:mul",
+  "argument1": "minecraft:realism/mountains/factor/original",
+  "argument2": "minecraft:realism/mountains/factor/erosion_trick"
+}

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:add",
+  "argument1": {
+    "type": "minecraft:add",
+    "argument1": 0,
+    "argument2": "minecraft:offset/hills"
+  },
+  "argument2": {
+    "type": "minecraft:add",
+    "argument1": "minecraft:realism/hills/factor/eroded_noise_tuned",
+    "argument2": "minecraft:realism/hills/jagged/adjusted"
+  }
+}
