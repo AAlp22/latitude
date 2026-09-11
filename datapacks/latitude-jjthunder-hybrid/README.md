@@ -16,8 +16,7 @@ JJThunder contributes:
 - the overworld dimension type's 2096-block height (`min_y=-64`, `logical_height=384`);
 - its tall-world noise/final-density dependency graph;
 - its biome JSON replacements;
-- caves/carvers, configured and placed features, and ores.
-- vanilla/Latitude structure resources remain untouched; JJThunder structure overrides are intentionally excluded because structures were not selected in this merge.
+- caves/carvers, configured and placed features, ores, and structures.
 
 The five `globe:overworld_*` settings use JJThunder's tall graph but replace the router's
 continent/depth/erosion/ridge fields with Globe functions. Their final density is the
