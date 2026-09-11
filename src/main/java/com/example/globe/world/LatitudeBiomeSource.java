@@ -37,16 +37,21 @@ public final class LatitudeBiomeSource extends BiomeSource {
 
     @Override
     protected Stream<RegistryEntry<Biome>> biomeStream() {
-        return LatitudeBiomes.completeBiomePool(biomes.get()).stream();
+        // StructurePlacementCalculator uses this set as a possible-biome prefilter.
+        // The active registry is broader than the source's actual noise entries.
+        return biomes.get().stream();
     }
 
     @Override
     public RegistryEntry<Biome> getBiome(int x, int y, int z, MultiNoiseUtil.MultiNoiseSampler sampler) {
-        RegistryEntry<Biome> base = original.getBiome(x, 0, z, sampler);
+        RegistryEntry<Biome> base = original.getBiome(x, y, z, sampler);
         int blockX = x << 2;
         int blockZ = z << 2;
         int blockY = y << 2;
-        Collection<RegistryEntry<Biome>> pool = LatitudeBiomes.completeBiomePool(biomes.get());
+        Collection<RegistryEntry<Biome>> pool = biomes.get();
+        if (LatitudeCaveBiomeRules.isCaveBiome(base)) {
+            return base;
+        }
         return LatitudeBiomes.pick(pool, base, blockX, blockZ, blockY, borderRadiusBlocks, sampler, "SOURCE", null, null, null);
     }
 }

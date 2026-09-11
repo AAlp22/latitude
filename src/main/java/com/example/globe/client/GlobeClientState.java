@@ -9,7 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public final class GlobeClientState {
-    public static boolean DEBUG_EW_WALL = true;
+    public static boolean DEBUG_EW_WALL = Boolean.parseBoolean(System.getProperty("latitude.debugEwWall", "false"));
     public static boolean DEBUG_EW_SUPPRESS_VANILLA_BORDER = true;
     public static boolean DEBUG_EW_FOG = Boolean.parseBoolean(System.getProperty("latitude.debugEwFog", "false"));
     public static boolean DEBUG_EW_WALL_LINES = true;
