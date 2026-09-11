@@ -38,6 +38,18 @@ class LatitudeDataPackUiContractTest {
     }
 
     @Test
+    void instanceDataPackLibraryFeedsAvailableSideOfNativePicker() throws IOException {
+        String source = Files.readString(SCREEN);
+
+        assertTrue(source.contains("getInstanceDataPackDir"));
+        assertTrue(source.contains("getSavesDirectory().getParent().resolve(\"datapacks\")"));
+        assertTrue(source.contains("seedDataPackLibrary(tempDir)"));
+        assertTrue(source.contains("Files.list(libraryDir)"));
+        assertTrue(source.contains("copyDataPack(libraryDir, tempDir, pack)"));
+        assertTrue(source.contains("Util.relativeCopy(source, destination, dataPack)"));
+    }
+
+    @Test
     void selectedPacksAreCopiedIntoTheNewSaveBeforeServerStart() throws IOException {
         String screen = Files.readString(SCREEN);
         String launcher = Files.readString(Path.of(

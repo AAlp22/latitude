@@ -862,6 +862,7 @@ public class LatitudeCreateWorldScreen extends Screen {
         if (tempDir == null) return;
 
         try {
+            seedDataPackLibrary(tempDir);
             ResourcePackManager resourcePackManager = VanillaDataPackProvider.createManager(tempDir);
             resourcePackManager.scanPacks();
             resourcePackManager.setEnabledProfiles(this.holder.dataConfiguration().dataPacks().getEnabled());
@@ -898,6 +899,29 @@ public class LatitudeCreateWorldScreen extends Screen {
             }
         }
         return this.dataPackTempDir;
+    }
+
+    private Path getInstanceDataPackDir() {
+        return this.client.getLevelStorage().getSavesDirectory().getParent().resolve("datapacks");
+    }
+
+    private void seedDataPackLibrary(Path tempDir) {
+        Path libraryDir = getInstanceDataPackDir();
+        try {
+            Files.createDirectories(libraryDir);
+            try (Stream<Path> packs = Files.list(libraryDir)) {
+                packs.filter(pack -> Files.isDirectory(pack)
+                                || pack.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".zip"))
+                        .forEach(pack -> {
+                            Path staged = tempDir.resolve(pack.getFileName().toString());
+                            if (!Files.exists(staged)) {
+                                copyDataPack(libraryDir, tempDir, pack);
+                            }
+                        });
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     boolean copyDataPacksToSession(LevelStorage.Session session) {
