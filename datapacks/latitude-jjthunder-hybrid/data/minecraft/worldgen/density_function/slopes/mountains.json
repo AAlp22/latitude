@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:add",
+  "argument1": {
+    "type": "minecraft:add",
+    "argument1": "minecraft:baseline/overworld/horizontal",
+    "argument2": "minecraft:offset/mountains"
+  },
+  "argument2": {
+    "type": "minecraft:add",
+    "argument1": "minecraft:factor/mountains",
+    "argument2": "minecraft:jagged/mountains"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:mul",
+  "argument1": "minecraft:realism/mountains/factor/eroded_noise",
+  "argument2": 0.7
+}

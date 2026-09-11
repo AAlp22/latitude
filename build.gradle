@@ -79,6 +79,14 @@ processResources {
     }
 }
 
+tasks.register('packageLatitudeJjThunderHybrid', Zip) {
+    group = 'distribution'
+    description = 'Package the committed Latitude + JJThunder hybrid datapack'
+    archiveFileName = "latitude-jjthunder-hybrid-${project.version}.zip"
+    destinationDirectory = layout.buildDirectory.dir('datapacks')
+    from('datapacks/latitude-jjthunder-hybrid')
+}
+
 tasks.withType(JavaCompile).configureEach {
         it.options.release = 17
 }

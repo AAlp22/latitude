@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:range_choice",
+  "input": "globe:overworld/noise_router/continents",
+  "min_inclusive": -1000000.0,
+  "max_exclusive": -0.25,
+  "when_in_range": {
+    "type": "minecraft:min",
+    "argument1": "minecraft:new_combination/interpolated",
+    "argument2": {
+      "type": "minecraft:y_clamped_gradient",
+      "from_y": 62,
+      "to_y": 63,
+      "from_value": 1024.0,
+      "to_value": -1024.0
+    }
+  },
+  "when_out_of_range": "minecraft:new_combination/interpolated"
+}

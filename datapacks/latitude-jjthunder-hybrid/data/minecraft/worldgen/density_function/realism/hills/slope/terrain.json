@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:add",
+  "argument1": "minecraft:baseline/overworld/horizontal",
+  "argument2": "minecraft:realism/hills/slope/height_flat_cached"
+}

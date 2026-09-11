@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:add",
+  "argument1": "minecraft:realism/extreme_mountains/factor/original_x",
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": "minecraft:realism/extreme_mountains/factor/original",
+    "argument2": -1
+  }
+}

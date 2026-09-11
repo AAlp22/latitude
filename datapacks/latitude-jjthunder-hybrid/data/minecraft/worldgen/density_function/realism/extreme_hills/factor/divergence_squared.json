@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:mul",
+  "argument1": {
+    "type": "minecraft:add",
+    "argument1": {
+      "type": "minecraft:square",
+      "argument": "minecraft:realism/extreme_hills/factor/derivative_x"
+    },
+    "argument2": {
+      "type": "minecraft:square",
+      "argument": "minecraft:realism/extreme_hills/factor/derivative_z"
+    }
+  },
+  "argument2": 10000
+}
