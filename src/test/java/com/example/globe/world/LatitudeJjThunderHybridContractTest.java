@@ -43,15 +43,15 @@ class LatitudeJjThunderHybridContractTest {
     }
 
     @Test
-    void hybridPackContainsTheSelectedJjWorldgenCategories() throws IOException {
+    void hybridPackContainsSelectedJjWorldgenCategoriesAndNoUnapprovedStructures() throws IOException {
         assertEquals(35, countJson("data/minecraft/worldgen/biome"));
         assertEquals(3, countJson("data/minecraft/worldgen/configured_carver"));
         assertEquals(4, countJson("data/minecraft/worldgen/configured_feature"));
         assertEquals(162, countJson("data/minecraft/worldgen/density_function"));
         assertEquals(5, countJson("data/minecraft/worldgen/noise"));
         assertEquals(33, countJson("data/minecraft/worldgen/placed_feature"));
-        assertEquals(3, countJson("data/minecraft/worldgen/structure"));
-        assertEquals(2, countJson("data/minecraft/worldgen/structure_set"));
+        assertFalse(Files.exists(PACK.resolve("data/minecraft/worldgen/structure")));
+        assertFalse(Files.exists(PACK.resolve("data/minecraft/worldgen/structure_set")));
     }
 
     @Test
