@@ -13,6 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LatitudeJjThunderHybridContractTest {
     private static final Path PACK = Path.of("datapacks/latitude-jjthunder-hybrid");
+    private static final Path MIXINS = Path.of("src/main/resources/globe.mixins.json");
+    private static final Path POPULATE_MIXIN = Path.of(
+            "src/main/java/com/example/globe/mixin/ChunkGeneratorPopulateBiomesMixin.java");
+    private static final Path LATITUDE_SOURCE = Path.of(
+            "src/main/java/com/example/globe/world/LatitudeBiomeSource.java");
 
     @Test
     void hybridPackKeepsJjHeightAndGlobeRouterContract() throws IOException {
@@ -74,6 +79,43 @@ class LatitudeJjThunderHybridContractTest {
         String continentalness = Files.readString(PACK.resolve(
                 "data/minecraft/worldgen/density_function/biome/overworld/continentalness.json"));
         assertTrue(continentalness.contains("globe:overworld/noise_router/continents"));
+    }
+
+    @Test
+    void latitudeBiomeOwnershipIsPopulationOnlyAndKeepsSerializedSourceConcrete() throws IOException {
+        String mixins = Files.readString(MIXINS);
+        String populateMixin = Files.readString(POPULATE_MIXIN);
+
+        assertTrue(mixins.contains("ChunkGeneratorPopulateBiomesMixin"));
+        assertFalse(mixins.contains("ChunkGeneratorBiomeSourceMixin"));
+        assertTrue(populateMixin.contains("@Redirect"));
+        assertTrue(populateMixin.contains("globe$populationBiomeSource"));
+        assertTrue(populateMixin.contains("new LatitudeBiomeSource"));
+        assertFalse(populateMixin.contains("setBiomeSource"));
+    }
+
+    @Test
+    void biomePopulationRedirectDoesNotRunTerrainPreviewPerQuartCell() throws IOException {
+        String populateMixin = Files.readString(POPULATE_MIXIN);
+        String latitudeSource = Files.readString(LATITUDE_SOURCE);
+
+        assertFalse(populateMixin.contains("getHeight("));
+        assertFalse(populateMixin.contains("getColumnSample("));
+        assertFalse(populateMixin.contains("previewTerrain"));
+        assertTrue(latitudeSource.contains(
+                "\"SOURCE\", null, null, null"));
+    }
+
+    @Test
+    void hybridPackHasNoUnselectedStructureExpansionResources() {
+        for (String relative : new String[]{
+                "data/minecraft/worldgen/structure",
+                "data/minecraft/worldgen/structure_set",
+                "data/minecraft/worldgen/processor_list",
+                "data/minecraft/worldgen/template_pool",
+                "data/minecraft/worldgen/configured_structure_feature"}) {
+            assertFalse(Files.exists(PACK.resolve(relative)), relative);
+        }
     }
 
     private static long countJson(String relativeDirectory) throws IOException {

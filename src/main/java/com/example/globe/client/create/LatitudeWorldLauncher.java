@@ -20,8 +20,12 @@ import net.minecraft.text.Text;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
+import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
+import net.minecraft.world.dimension.DimensionOptions;
 import net.minecraft.world.dimension.DimensionOptionsRegistryHolder;
 import net.minecraft.world.gen.WorldPreset;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
 import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelStorage;
@@ -30,6 +34,7 @@ import net.minecraft.registry.ServerDynamicRegistryType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -121,8 +126,8 @@ public final class LatitudeWorldLauncher {
             // ── 6. Sync structures/bonus into holder ──
             wc.update();
 
-            // WorldCreator.update() can rebuild settings from generic defaults, so
-            // reassert the selected Latitude preset before extracting the final holder.
+            // WorldCreator.update() can rebuild settings from generic defaults. Rebuild the
+            // selected dimensions directly from the resolved preset before reading the holder.
             GeneratorOptionsHolder goh = wc.getGeneratorOptionsHolder();
             Registry<WorldPreset> updatedPresetRegistry = goh.getCombinedRegistryManager()
                     .get(RegistryKeys.WORLD_PRESET);
@@ -136,7 +141,13 @@ public final class LatitudeWorldLauncher {
                 client.setScreen(screen);
                 return;
             }
-            wc.setWorldType(new WorldCreator.WorldType(updatedPresetEntry));
+            goh = reassertSelectedPreset(wc, updatedPresetEntry);
+
+            if (isLatitude && !validateEffectivePreset(goh, size)) {
+                clearLatitudeLoadingState();
+                client.setScreen(screen);
+                return;
+            }
 
             // ── 6. Extract updated holder ──
             goh = wc.getGeneratorOptionsHolder();
@@ -242,6 +253,49 @@ public final class LatitudeWorldLauncher {
             }
             client.setScreen(screen);
         }
+    }
+
+    private static GeneratorOptionsHolder reassertSelectedPreset(WorldCreator worldCreator,
+                                                                  RegistryEntry<WorldPreset> presetEntry) {
+        GeneratorOptionsHolder current = worldCreator.getGeneratorOptionsHolder();
+        GeneratorOptionsHolder corrected = current.with(
+                current.generatorOptions(),
+                presetEntry.value().createDimensionsRegistryHolder());
+        worldCreator.setGeneratorOptionsHolder(corrected);
+        return worldCreator.getGeneratorOptionsHolder();
+    }
+
+    private static boolean validateEffectivePreset(GeneratorOptionsHolder holder, GlobeWorldSize size) {
+        String expectedSettingsId = "globe:overworld_" + size.name().toLowerCase(Locale.ROOT);
+        Optional<DimensionOptions> overworld = holder.selectedDimensions()
+                .getOrEmpty(DimensionOptions.OVERWORLD);
+        if (overworld.isEmpty()) {
+            LOGGER.error("Aborting world start because effective overworld generator is missing; expectedSettings={}",
+                    expectedSettingsId);
+            return false;
+        }
+
+        ChunkGenerator generator = overworld.get().chunkGenerator();
+        String settingsId = "<not-noise-generator>";
+        if (generator instanceof NoiseChunkGenerator noise) {
+            settingsId = noise.getSettings().getKey()
+                    .map(key -> key.getValue().toString())
+                    .orElse("<unkeyed-noise-settings>");
+        }
+        String biomeSourceType = generator.getBiomeSource().getClass().getName();
+        boolean multiNoiseBiomeSource = generator.getBiomeSource() instanceof MultiNoiseBiomeSource;
+        boolean genericFallback = "minecraft:overworld".equals(settingsId);
+
+        LOGGER.info("[Latitude lifecycle] effective overworld generator: settings={} expectedSettings={} generatorType={} biomeSourceType={} multiNoise={} genericFallback={}",
+                settingsId, expectedSettingsId, generator.getClass().getName(), biomeSourceType,
+                multiNoiseBiomeSource, genericFallback);
+
+        if (!expectedSettingsId.equals(settingsId) || !(generator instanceof NoiseChunkGenerator) || !multiNoiseBiomeSource) {
+            LOGGER.error("Aborting world start because effective overworld generator is not Latitude-owned: settings={} expectedSettings={} generatorType={} biomeSourceType={}",
+                    settingsId, expectedSettingsId, generator.getClass().getName(), biomeSourceType);
+            return false;
+        }
+        return true;
     }
 
     private static void beginLatitudeLoading(long startedAtMs) {
