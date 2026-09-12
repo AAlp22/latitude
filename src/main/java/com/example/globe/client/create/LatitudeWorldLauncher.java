@@ -85,6 +85,7 @@ public final class LatitudeWorldLauncher {
                 presetId = size.worldPresetId;
             }
             RegistryKey<WorldPreset> presetKey = RegistryKey.of(RegistryKeys.WORLD_PRESET, presetId);
+            LOGGER.info("[Latitude lifecycle] requested world preset={} size={}", presetKey.getValue(), size.name());
 
             // ── 2. Create WorldCreator ──
             WorldCreator wc = new WorldCreator(
@@ -286,8 +287,8 @@ public final class LatitudeWorldLauncher {
         boolean multiNoiseBiomeSource = generator.getBiomeSource() instanceof MultiNoiseBiomeSource;
         boolean genericFallback = "minecraft:overworld".equals(settingsId);
 
-        LOGGER.info("[Latitude lifecycle] effective overworld generator: settings={} expectedSettings={} generatorType={} biomeSourceType={} multiNoise={} genericFallback={}",
-                settingsId, expectedSettingsId, generator.getClass().getName(), biomeSourceType,
+        LOGGER.info("[Latitude lifecycle] effective overworld generator: selectedDimensionKey={} settings={} expectedSettings={} generatorType={} biomeSourceType={} multiNoise={} genericFallback={}",
+                DimensionOptions.OVERWORLD.getValue(), settingsId, expectedSettingsId, generator.getClass().getName(), biomeSourceType,
                 multiNoiseBiomeSource, genericFallback);
 
         if (!expectedSettingsId.equals(settingsId) || !(generator instanceof NoiseChunkGenerator) || !multiNoiseBiomeSource) {

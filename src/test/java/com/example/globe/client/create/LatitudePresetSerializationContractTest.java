@@ -18,6 +18,8 @@ class LatitudePresetSerializationContractTest {
         String source = Files.readString(LAUNCHER);
 
         assertTrue(source.contains("createDimensionsRegistryHolder()"));
+        assertTrue(source.contains("requested world preset"));
+        assertTrue(source.contains("selectedDimensionKey"));
         assertTrue(source.contains("setGeneratorOptionsHolder"));
         assertTrue(source.contains("selectedDimensions()"));
         assertTrue(source.contains("getOrEmpty(DimensionOptions.OVERWORLD)"));
