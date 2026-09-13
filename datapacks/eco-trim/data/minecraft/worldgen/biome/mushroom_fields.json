@@ -128,8 +128,7 @@
       "eco:nether_mushrooms",
       "minecraft:patch_sugar_cane",
       "minecraft:patch_pumpkin",
-      "eco:large_pumpkin",
-      "minecraft:warm_ocean_vegetation"
+      "eco:large_pumpkin"
     ],
     [
       "minecraft:freeze_top_layer"
