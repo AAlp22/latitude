@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -116,6 +117,17 @@ class LatitudeJjThunderHybridContractTest {
                 "data/minecraft/worldgen/configured_structure_feature"}) {
             assertFalse(Files.exists(PACK.resolve(relative)), relative);
         }
+    }
+
+    @Test
+    void hybridPackRootContainsOnlyPackContent() throws IOException {
+        Set<String> rootEntries;
+        try (Stream<Path> entries = Files.list(PACK)) {
+            rootEntries = entries
+                    .map(path -> path.getFileName().toString())
+                    .collect(java.util.stream.Collectors.toSet());
+        }
+        assertEquals(Set.of("data", "pack.mcmeta", "README.md"), rootEntries);
     }
 
     private static long countJson(String relativeDirectory) throws IOException {
