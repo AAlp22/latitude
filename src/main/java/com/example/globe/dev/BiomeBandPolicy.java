@@ -63,7 +63,7 @@ final class BiomeBandPolicy {
             entry("minecraft:snowy_slopes", LatitudeBands.Band.SUBPOLAR, LatitudeBands.Band.POLAR),
             entry("minecraft:jagged_peaks", LatitudeBands.Band.SUBPOLAR, LatitudeBands.Band.POLAR),
             entry("minecraft:frozen_peaks", LatitudeBands.Band.SUBPOLAR, LatitudeBands.Band.POLAR),
-            entry("minecraft:ice_spikes", LatitudeBands.Band.SUBPOLAR, LatitudeBands.Band.POLAR)
+            entry("minecraft:ice_spikes", LatitudeBands.Band.POLAR)
     );
 
     private BiomeBandPolicy() {
