@@ -51,7 +51,7 @@ public class GlobeMod implements ModInitializer {
 
     private static final String SPAWN_CHOSEN_TAG = "globe_spawn_chosen";
 
-    public static final int BORDER_RADIUS = 50000;
+    public static final int BORDER_RADIUS = 100000;
     public static final int POLE_BAND_START_ABS_Z = 12000;
     private static int activePoleBandStartAbsZ = POLE_BAND_START_ABS_Z;
     public static final int POLE_WARNING_DISTANCE_BLOCKS = 256;
@@ -337,11 +337,11 @@ public class GlobeMod implements ModInitializer {
         ChunkGenerator gen = world.getChunkManager().getChunkGenerator();
         if (!(gen instanceof NoiseChunkGenerator noise)) return BORDER_RADIUS;
 
-        if (noise.matchesSettings(GLOBE_SETTINGS_SMALL_KEY)) return 12500;
-        if (noise.matchesSettings(GLOBE_SETTINGS_MEDIUM_KEY)) return 25000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_SMALL_KEY)) return 25000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_MEDIUM_KEY)) return 50000;
         if (noise.matchesSettings(GLOBE_SETTINGS_REGULAR_KEY)) return BORDER_RADIUS;
-        if (noise.matchesSettings(GLOBE_SETTINGS_LARGE_KEY)) return 100000;
-        if (noise.matchesSettings(GLOBE_SETTINGS_MASSIVE_KEY)) return 200000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_LARGE_KEY)) return 200000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_MASSIVE_KEY)) return 400000;
 
         return BORDER_RADIUS;
     }

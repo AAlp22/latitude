@@ -5,29 +5,29 @@ import net.minecraft.util.Identifier;
 
 public enum GlobeWorldSize {
     SMALL(
-            Text.literal("Small (25,000 x 25,000)"),
+            Text.literal("Small (50,000 x 50,000)"),
             Identifier.of("globe", "globe_small"),
-            12500
-    ),
-    MEDIUM(
-            Text.literal("Medium (50,000 x 50,000)"),
-            Identifier.of("globe", "globe_medium"),
             25000
     ),
-    REGULAR(
-            Text.literal("Regular (100,000 x 100,000)"),
-            Identifier.of("globe", "globe_regular"),
+    MEDIUM(
+            Text.literal("Medium (100,000 x 100,000)"),
+            Identifier.of("globe", "globe_medium"),
             50000
     ),
-    LARGE(
-            Text.literal("Large (200,000 x 200,000)"),
-            Identifier.of("globe", "globe_large"),
+    REGULAR(
+            Text.literal("Regular (200,000 x 200,000)"),
+            Identifier.of("globe", "globe_regular"),
             100000
     ),
-    MASSIVE(
-            Text.literal("Massive (400,000 x 400,000)"),
-            Identifier.of("globe", "globe_massive"),
+    LARGE(
+            Text.literal("Large (400,000 x 400,000)"),
+            Identifier.of("globe", "globe_large"),
             200000
+    ),
+    MASSIVE(
+            Text.literal("Massive (800,000 x 800,000)"),
+            Identifier.of("globe", "globe_massive"),
+            400000
     );
 
     public final Text label;

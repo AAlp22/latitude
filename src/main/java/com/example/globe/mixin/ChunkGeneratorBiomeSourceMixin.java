@@ -197,11 +197,11 @@ public abstract class ChunkGeneratorBiomeSourceMixin {
         if (!((Object) this instanceof NoiseChunkGenerator noise)) {
             return GlobeMod.BORDER_RADIUS;
         }
-        if (noise.matchesSettings(GLOBE_SETTINGS_SMALL_KEY)) return 12500;
-        if (noise.matchesSettings(GLOBE_SETTINGS_MEDIUM_KEY)) return 25000;
-        if (noise.matchesSettings(GLOBE_SETTINGS_REGULAR_KEY)) return 50000;
-        if (noise.matchesSettings(GLOBE_SETTINGS_LARGE_KEY)) return 100000;
-        if (noise.matchesSettings(GLOBE_SETTINGS_MASSIVE_KEY)) return 200000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_SMALL_KEY)) return 25000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_MEDIUM_KEY)) return 50000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_REGULAR_KEY)) return 100000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_LARGE_KEY)) return 200000;
+        if (noise.matchesSettings(GLOBE_SETTINGS_MASSIVE_KEY)) return 400000;
         return GlobeMod.BORDER_RADIUS;
     }
 }
