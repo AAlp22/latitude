@@ -14,6 +14,7 @@ import net.minecraft.client.world.GeneratorOptionsHolder;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.SimpleRegistry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.resource.featuretoggle.FeatureFlags;
 import net.minecraft.text.Text;
@@ -154,8 +155,19 @@ public final class LatitudeWorldLauncher {
             goh = wc.getGeneratorOptionsHolder();
 
             // ── 7. Build level metadata (replicates CreateWorldScreen.createLevel lines 284-298) ──
+            // A data pack that ships data/minecraft/dimension/*.json (overhaul mods do) enters
+            // goh.dimensionOptionsRegistry() and otherwise wins the toConfig merge, silently
+            // replacing the selected preset's dimension. Keep data-pack-only dimensions, but let
+            // the selected preset win every shared key, then fail closed on any mismatch.
+            Registry<DimensionOptions> mergedDimensionRegistry = mergePreservingSelected(
+                    goh.dimensionOptionsRegistry(), goh.selectedDimensions().dimensions());
             DimensionOptionsRegistryHolder.DimensionsConfig dimensionsConfig =
-                    goh.selectedDimensions().toConfig(goh.dimensionOptionsRegistry());
+                    goh.selectedDimensions().toConfig(mergedDimensionRegistry);
+            if (isLatitude && !validateFinalDimensionsConfig(dimensionsConfig, size)) {
+                clearLatitudeLoadingState();
+                client.setScreen(screen);
+                return;
+            }
 
             CombinedDynamicRegistries<ServerDynamicRegistryType> combinedDynamicRegistries =
                     goh.combinedDynamicRegistries()
@@ -264,6 +276,61 @@ public final class LatitudeWorldLauncher {
                 presetEntry.value().createDimensionsRegistryHolder());
         worldCreator.setGeneratorOptionsHolder(corrected);
         return worldCreator.getGeneratorOptionsHolder();
+    }
+
+    /**
+     * Data-pack dimension entries still join the world, but the selected preset wins any
+     * shared key (e.g. a mod overriding minecraft:overworld must not replace the preset).
+     */
+    private static Registry<DimensionOptions> mergePreservingSelected(
+            Registry<DimensionOptions> datapackDimensions,
+            Registry<DimensionOptions> selectedDimensions) {
+        SimpleRegistry<DimensionOptions> merged =
+                new SimpleRegistry<>(RegistryKeys.DIMENSION, Lifecycle.stable());
+        java.util.LinkedHashSet<RegistryKey<DimensionOptions>> keys =
+                new java.util.LinkedHashSet<>(datapackDimensions.getKeys());
+        keys.addAll(selectedDimensions.getKeys());
+        for (RegistryKey<DimensionOptions> key : keys) {
+            RegistryEntry.Reference<DimensionOptions> selected =
+                    selectedDimensions.getEntry(key).orElse(null);
+            if (selected != null) {
+                RegistryEntry.Reference<DimensionOptions> datapack =
+                        datapackDimensions.getEntry(key).orElse(null);
+                if (datapack != null && !datapack.value().equals(selected.value())) {
+                    LOGGER.warn("[Latitude lifecycle] Data-pack dimension '{}' shadowed by the selected preset",
+                            key.getValue());
+                }
+                merged.add(key, selected.value(), Lifecycle.stable());
+            } else {
+                RegistryEntry.Reference<DimensionOptions> datapack =
+                        datapackDimensions.getEntry(key).orElse(null);
+                if (datapack != null) {
+                    merged.add(key, datapack.value(), Lifecycle.stable());
+                }
+            }
+        }
+        return merged.freeze();
+    }
+
+    private static boolean validateFinalDimensionsConfig(
+            DimensionOptionsRegistryHolder.DimensionsConfig dimensionsConfig, GlobeWorldSize size) {
+        String expectedSettingsId = "globe:overworld_" + size.name().toLowerCase(Locale.ROOT);
+        DimensionOptions overworld = dimensionsConfig.dimensions()
+                .getEntry(DimensionOptions.OVERWORLD)
+                .map(RegistryEntry::value)
+                .orElse(null);
+        String settingsId = "<missing>";
+        if (overworld != null && overworld.chunkGenerator() instanceof NoiseChunkGenerator noise) {
+            settingsId = noise.getSettings().getKey()
+                    .map(key -> key.getValue().toString())
+                    .orElse("<unkeyed-noise-settings>");
+        }
+        if (!expectedSettingsId.equals(settingsId)) {
+            LOGGER.error("Aborting world start because the final dimensions config is not Latitude-owned: settings={} expectedSettings={}",
+                    settingsId, expectedSettingsId);
+            return false;
+        }
+        return true;
     }
 
     private static boolean validateEffectivePreset(GeneratorOptionsHolder holder, GlobeWorldSize size) {

@@ -45,4 +45,22 @@ class LatitudePresetSerializationContractTest {
         assertTrue(source.contains("Aborting world start because effective overworld generator"));
         assertFalse(source.contains("// TODO: validate effective overworld generator"));
     }
+
+    @Test
+    void launcherKeepsTheSelectedPresetWhenDataPacksOverrideDimensionIds() throws IOException {
+        String source = Files.readString(LAUNCHER);
+
+        // A data pack shipping data/minecraft/dimension/overworld.json must not win the merge.
+        assertTrue(source.contains("mergePreservingSelected"));
+        assertTrue(source.contains("Data-pack dimension"));
+        assertTrue(source.contains("shadowed by the selected preset"));
+
+        int finalValidationCall = source.indexOf("if (isLatitude && !validateFinalDimensionsConfig");
+        int session = source.indexOf("createSessionWithoutSymlinkCheck");
+        assertTrue(finalValidationCall >= 0);
+        assertTrue(session >= 0);
+        assertTrue(finalValidationCall < session);
+        assertTrue(source.contains(
+                "Aborting world start because the final dimensions config is not Latitude-owned"));
+    }
 }
