@@ -2161,8 +2161,10 @@ public final class LatitudeBiomes {
     private static double tropicalCompositionBias(long seed, int blockX, int blockZ) {
         int chunkX = blockX >> 4;
         int chunkZ = Math.abs(blockZ) >> 4;
+        // 24/16 chunks: the old 7-chunk micro layer re-speckled the tropical belts at a scale
+        // the eye reads as dither; composition now sits below the 24-chunk roll grain.
         double broad = (blobNoise01(seed ^ TROPICAL_COMPOSITION_SALT, chunkX, chunkZ, 24, TROPICAL_COMPOSITION_SALT) * 2.0) - 1.0;
-        double medium = (blobNoise01(seed ^ TROPICAL_MICRO_COMPOSITION_SALT, chunkX, chunkZ, 7, TROPICAL_MICRO_COMPOSITION_SALT) * 2.0) - 1.0;
+        double medium = (blobNoise01(seed ^ TROPICAL_MICRO_COMPOSITION_SALT, chunkX, chunkZ, 16, TROPICAL_MICRO_COMPOSITION_SALT) * 2.0) - 1.0;
         return (broad * 0.18) + (medium * 0.10);
     }
 
