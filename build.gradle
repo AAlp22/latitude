@@ -30,6 +30,9 @@ loom {
             name "Biome Preview (Headless)"
             runDir "run-headless"
             vmArg "-Dlatdev.biomePng=${System.getProperty('latdev.biomePng', 'enabled')}"
+            vmArg "-Dlatitude.variantCellBlocks=${System.getProperty('latitude.variantCellBlocks', '384')}"
+            vmArg "-Dlatitude.poolIndexScaleBlocks=${System.getProperty('latitude.poolIndexScaleBlocks', '8192')}"
+            vmArg "-Dlatitude.debugPickReturnsBase=${System.getProperty('latitude.debugPickReturnsBase', 'false')}"
         }
         biomeSeedSearch {
             server()
@@ -69,6 +72,14 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
+
+    // DEV-ONLY local runtime (uncommitted): Expanded Ecosphere + CristelLib + the compat
+    // bridge, so headless biome previews sample the real merged pools.
+    modLocalRuntime files("C:/Users/alp/Desktop/enhanced_survival/.hermes/mods-source/expanded_ecosphere-3.2.3-fabric.jar")
+    modLocalRuntime files("C:/Users/alp/Desktop/enhanced_survival/.hermes/mods-source/cristellib-1.1.5-fabric.jar")
+    modLocalRuntime files("C:/Users/alp/Desktop/enhanced_survival/.modules/enhanced_survival_latitude_bridge/build/libs/enhanced_survival_latitude_bridge-0.1.0.jar")
+    // CristelLib's nested jankson is not surfaced to dev runs; extracted from its jar.
+    runtimeOnly files('.hermes/devlibs/jankson-1.2.3.jar')
 }
 
 processResources {

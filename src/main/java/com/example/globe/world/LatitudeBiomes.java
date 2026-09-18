@@ -819,6 +819,12 @@ public final class LatitudeBiomes {
     // chunks. 38 re-rolled those decisions every ~2 chunks, which read as per-chunk biome slop.
     // Override per instance with -Dlatitude.variantCellBlocks=<blocks>.
     private static final int VARIANT_CELL_SIZE_BLOCKS = Integer.getInteger("latitude.variantCellBlocks", 384);
+
+    // Wavelength of the within-pool biome-index field (idx = floor(noise * poolSize)): the run
+    // per pool member along the gradient is roughly POOL_INDEX_SCALE_BLOCKS / poolSize. 2048
+    // produced ~100-block single-biome beads inside every pool (the "biomes per chunk" symptom);
+    // 8192 puts pool members at a few hundred blocks. Override with -Dlatitude.poolIndexScaleBlocks.
+    private static final int POOL_INDEX_SCALE_BLOCKS = Integer.getInteger("latitude.poolIndexScaleBlocks", 8192);
     private static final int BLEND_TRANSITION_WIDTH_BLOCKS = 1408;
     private static final int BLEND_DITHER_SCALE_BLOCKS = 512;
     private static final int BLEND_NOISE_PATCH_CHUNKS = 10;
@@ -993,9 +999,16 @@ public final class LatitudeBiomes {
         return pick(biomeRegistry, base, blockX, blockZ, blockY, borderRadiusBlocks, sampler, callerContext, null, null, null);
     }
 
+    // Dev/atlas bisect knob: makes pick() a pass-through so a preview render shows the raw
+    // base source alone (diagnoses whether visible patchwork comes from the base or the pick).
+    private static final boolean DEBUG_PICK_RETURNS_BASE = Boolean.getBoolean("latitude.debugPickReturnsBase");
+
     public static RegistryEntry<Biome> pick(Registry<Biome> biomeRegistry, RegistryEntry<Biome> base, int blockX, int blockZ, int blockY, int borderRadiusBlocks,
                                             MultiNoiseUtil.MultiNoiseSampler sampler, String callerContext,
                                             NoiseChunkGenerator generator, NoiseConfig noiseConfig, HeightLimitView heightView) {
+        if (DEBUG_PICK_RETURNS_BASE) {
+            return base;
+        }
         long bioCostPickStartNs = DEBUG_BIOME_COST ? System.nanoTime() : 0L;
         long bioCostBandSelectNs = 0L;
         long bioCostPreviewOrMountainNs = 0L;
@@ -1796,7 +1809,7 @@ public final class LatitudeBiomes {
                     "minecraft:lukewarm_ocean");
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * 20L);
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -1822,7 +1835,7 @@ public final class LatitudeBiomes {
             return pickFromFallbacks(biomes, entryById(biomes, "minecraft:warm_ocean"), "minecraft:warm_ocean", "minecraft:lukewarm_ocean");
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * 20L);
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -2324,7 +2337,7 @@ public final class LatitudeBiomes {
             return pickFromFallbacks(biomes, base, fallbackOptions);
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * (long) bandIndex);
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -2349,7 +2362,7 @@ public final class LatitudeBiomes {
             return base;
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * (long) bandIndex) ^ extraSalt;
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -2382,7 +2395,7 @@ public final class LatitudeBiomes {
             return base;
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * (long) bandIndex) ^ extraSalt;
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -2415,7 +2428,7 @@ public final class LatitudeBiomes {
             return base;
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * (long) bandIndex) ^ extraSalt;
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -2494,7 +2507,7 @@ public final class LatitudeBiomes {
             return base;
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * (long) bandIndex) ^ extraSalt;
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -2514,7 +2527,7 @@ public final class LatitudeBiomes {
             return base;
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * (long) bandIndex);
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -2701,7 +2714,7 @@ public final class LatitudeBiomes {
             throw new IllegalStateException("allowedPool must not be empty");
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * (long) bandIndex);
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -4107,7 +4120,7 @@ private static boolean swampPatchHere(long seed, int blockX, int blockZ) {
             return pickFrom(biomes, blockX, blockZ, bandIndex, fallbackOptions);
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * (long) bandIndex);
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
@@ -4136,7 +4149,7 @@ private static boolean swampPatchHere(long seed, int blockX, int blockZ) {
             return base;
         }
 
-        int scaleBlocks = 2048;
+        int scaleBlocks = POOL_INDEX_SCALE_BLOCKS;
         long seed = 0L;
         long salted = seed ^ (0x9E3779B97F4A7C15L * (long) bandIndex);
         double n = ValueNoise2D.sampleBlocks(salted, blockX, blockZ, scaleBlocks);
