@@ -5,14 +5,9 @@ import com.example.globe.world.LatitudeBiomes;
 import com.example.globe.world.LatitudeWorldState;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.command.CommandManager;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-
-
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
@@ -62,16 +57,6 @@ public class GlobeMod implements ModInitializer {
     private static final long SPAWN_SALT = 0x7A3E21B5D4C1F7A9L;
 
     public static final int POLE_START = 12000; // Legacy constant, use activePoleBandStartAbsZ for dynamic logic
-
-    private enum PolarStage {
-        NONE,
-        UNEASE,
-        IMPAIR,
-        HOSTILE,
-        WHITEOUT,
-        LETHAL,
-        HOPELESS
-    }
 
     private static PolarCapScrubber POLAR_SCRUBBER;
 
@@ -157,8 +142,6 @@ public class GlobeMod implements ModInitializer {
         });
 
         CommandRegistrationCallback.EVENT.register(LatitudeDevCommands::register);
-
-        ServerTickEvents.END_SERVER_TICK.register(GlobeMod::borderUxTick);
     }
 
     private static void registerDevOnlyCommand(Object dispatcher) {
@@ -246,81 +229,9 @@ public class GlobeMod implements ModInitializer {
                 borderRadiusBlocks, diameter, activePoleBandStartAbsZ);
     }
 
-    private static void borderUxTick(MinecraftServer server) {
-        ServerWorld overworld = server.getOverworld();
-        if (overworld == null) {
-            return;
-        }
-
-        if (!isGlobeOverworld(overworld)) {
-            return;
-        }
-
-        long worldTime = overworld.getTime();
-        if ((worldTime % 10L) != 0L) {
-            return;
-        }
-
-        WorldBorder border = overworld.getWorldBorder();
-
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            if (player.getEntityWorld() != overworld) {
-                continue;
-            }
-
-            double progressZ = com.example.globe.util.LatitudeMath.hazardProgress(border, player.getZ());
-            int stageIndex = com.example.globe.util.LatitudeMath.hazardStageIndex(border, player.getZ(), progressZ);
-
-            // Check if player is in the active polar band for effects
-            if (Math.abs(player.getZ()) < activePoleBandStartAbsZ) {
-                continue;
-            }
-
-            PolarStage stage = switch (stageIndex) {
-                case 1 -> PolarStage.IMPAIR;
-                case 2 -> PolarStage.HOSTILE;
-                case 3 -> PolarStage.WHITEOUT;
-                case 4 -> PolarStage.LETHAL;
-                default -> PolarStage.NONE;
-            };
-
-            int duration = 40;
-            boolean ambient = true;
-            boolean showParticles = false;
-            boolean showIcon = false;
-
-            if (stage == PolarStage.IMPAIR) {
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, duration, 0, ambient, showParticles, showIcon));
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, duration, 0, ambient, showParticles, showIcon));
-            } else if (stage == PolarStage.HOSTILE || stage == PolarStage.WHITEOUT) {
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, duration, 1, ambient, showParticles, showIcon));
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, duration, 0, ambient, showParticles, showIcon));
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, duration, 0, ambient, showParticles, showIcon));
-            } else if (stage == PolarStage.LETHAL || stage == PolarStage.HOPELESS) {
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, duration, 2, ambient, showParticles, showIcon));
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, duration, 1, ambient, showParticles, showIcon));
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, duration, 0, ambient, showParticles, showIcon));
-
-                int max = 140;
-                int target = (int) Math.floor(max * 0.85);
-                if (target < 1) {
-                    target = 1;
-                }
-                player.setFrozenTicks(Math.max(player.getFrozenTicks(), target));
-            }
-        }
-    }
-
-    private static void applyContinuousBlindness(ServerPlayerEntity player, boolean inFinalWhiteout) {
-        if (!inFinalWhiteout) {
-            return;
-        }
-
-        StatusEffectInstance cur = player.getStatusEffect(StatusEffects.BLINDNESS);
-        if (cur == null || cur.getDuration() < 80) {
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 200, 0, true, false, false));
-        }
-    }
+    // Polar hazard status effects and frozen-tick application were removed on purpose.
+    // Temperature handling is being routed through ES:Metabolism later; the stage math
+    // (LatitudeMath.hazardProgress / hazardStageIndex) and the client warning overlay remain.
 
     public static boolean isGlobeOverworld(ServerWorld world) {
         ChunkGenerator gen = world.getChunkManager().getChunkGenerator();

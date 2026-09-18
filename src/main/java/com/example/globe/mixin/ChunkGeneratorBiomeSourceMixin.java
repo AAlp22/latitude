@@ -21,6 +21,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -203,5 +204,32 @@ public abstract class ChunkGeneratorBiomeSourceMixin {
         if (noise.matchesSettings(GLOBE_SETTINGS_LARGE_KEY)) return 200000;
         if (noise.matchesSettings(GLOBE_SETTINGS_MASSIVE_KEY)) return 400000;
         return GlobeMod.BORDER_RADIUS;
+    }
+
+    /**
+     * Feature generation intersects the biome set read from chunk palettes with the biome
+     * source's getBiomes() before running placed features, and the memoized indexed-features
+     * list is built from the same call. The serialized generator field must stay the concrete
+     * vanilla source (see the serialization contract), but that source only reports vanilla
+     * parameter-list biomes, so every tag-bridged pool biome was stripped from the feature set
+     * and its placed features (trees, vegetation) never ran. Substitute the decorated pool at
+     * these two read sites only.
+     */
+    @Redirect(
+            method = "generateFeatures(Lnet/minecraft/world/StructureWorldAccess;Lnet/minecraft/world/chunk/Chunk;Lnet/minecraft/world/gen/StructureAccessor;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/biome/source/BiomeSource;getBiomes()Ljava/util/Set;"),
+            require = 1
+    )
+    private static java.util.Set<net.minecraft.registry.entry.RegistryEntry<Biome>> globe$decoratedFeatureBiomeSet(BiomeSource source) {
+        return java.util.Set.copyOf(LatitudeBiomes.completeBiomePool(source.getBiomes()));
+    }
+
+    @Redirect(
+            method = "method_44215",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/biome/source/BiomeSource;getBiomes()Ljava/util/Set;"),
+            require = 1
+    )
+    private static java.util.Set<net.minecraft.registry.entry.RegistryEntry<Biome>> globe$decoratedIndexedFeatureBiomes(BiomeSource source) {
+        return java.util.Set.copyOf(LatitudeBiomes.completeBiomePool(source.getBiomes()));
     }
 }
