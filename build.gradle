@@ -31,7 +31,8 @@ loom {
             runDir "run-headless"
             vmArg "-Dlatdev.biomePng=${System.getProperty('latdev.biomePng', 'enabled')}"
             vmArg "-Dlatitude.variantCellBlocks=${System.getProperty('latitude.variantCellBlocks', '384')}"
-            vmArg "-Dlatitude.poolIndexScaleBlocks=${System.getProperty('latitude.poolIndexScaleBlocks', '8192')}"
+            vmArg "-Dlatitude.poolIndexScaleBlocks=${System.getProperty('latitude.poolIndexScaleBlocks', '4096')}"
+            vmArg "-Dlatitude.atlas.inventoryStep=${System.getProperty('latitude.atlas.inventoryStep', '32')}"
             vmArg "-Dlatitude.debugPickReturnsBase=${System.getProperty('latitude.debugPickReturnsBase', 'false')}"
         }
         biomeSeedSearch {

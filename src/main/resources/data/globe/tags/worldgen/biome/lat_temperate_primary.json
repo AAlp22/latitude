@@ -4,7 +4,6 @@
     "minecraft:forest",
     "minecraft:plains",
     "minecraft:birch_forest",
-    "minecraft:taiga",
     {
       "id": "traverse:flatlands",
       "required": false
