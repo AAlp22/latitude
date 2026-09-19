@@ -363,7 +363,13 @@
               "if_true": {
                 "type": "minecraft:biome",
                 "biome_is": [
-                  "#globe:surface_glacial"
+                  "wythers:glacial_cliffs",
+                  "wythers:ice_cap",
+                  "wythers:icy_crags",
+                  "wythers:icy_shore",
+                  "wythers:icy_volcano",
+                  "wythers:snowy_canyon",
+                  "wythers:snowy_peaks"
                 ]
               },
               "then_run": {
@@ -395,7 +401,11 @@
               "if_true": {
                 "type": "minecraft:biome",
                 "biome_is": [
-                  "#globe:surface_permasnow"
+                  "wythers:deep_snowy_taiga",
+                  "wythers:snowy_bog",
+                  "wythers:snowy_fen",
+                  "wythers:snowy_thermal_taiga",
+                  "wythers:snowy_tundra"
                 ]
               },
               "then_run": {

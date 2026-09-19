@@ -230,6 +230,10 @@ public final class LatitudeSeasonBridge {
      * renderer may still use the continuous physical factor, but Minecraft's
      * discrete sky-light level must not turn ordinary morning into level 5.
      */
+    /** Night floor: never darker than roughly vanilla night (level ~4), so moonless
+     *  astronomical nights stop reaching pitch black; moon phases still brighten above it. */
+    private static final double NIGHT_LIGHT_FLOOR = 0.27;
+
     public static double gameplaySkyLightFactor(LatitudeCalendarMath.SolarPosition solar) {
         double elevationDegrees = Math.toDegrees(solar.solarElevationRadians());
         if (solar.polarDay() || elevationDegrees >= 0.0) {
@@ -237,7 +241,7 @@ public final class LatitudeSeasonBridge {
         }
         double twilight = Math.max(0.0, Math.min(1.0, (elevationDegrees + 6.0) / 6.0));
         double moonContribution = Math.min(0.18, Math.max(0.0, solar.skyLightFactor()));
-        return Math.max(twilight, moonContribution);
+        return Math.max(NIGHT_LIGHT_FLOOR, Math.max(twilight, moonContribution));
     }
 
     /**
