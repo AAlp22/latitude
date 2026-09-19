@@ -376,6 +376,8 @@ public final class BiomePreviewExporter {
         private final NoiseConfig gatedNoiseConfig;
         private final net.minecraft.world.HeightLimitView gatedHeightView;
         private final int noiseY;
+        private final BufferedImage heightImage;
+        private int seaLevelBlocks = 63;
 
         private int imageX = 0;
         private int imageZ = 0;
@@ -430,6 +432,11 @@ public final class BiomePreviewExporter {
             this.gatedHeightView = world;
             this.noiseY = Math.floorDiv(y, 4);
 
+            this.heightImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            if (generator instanceof net.minecraft.world.gen.chunk.NoiseChunkGenerator seaGen) {
+                this.seaLevelBlocks = seaGen.getSeaLevel();
+            }
+
             for (Layer layer : layers) {
                 images.put(layer, new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB));
             }
@@ -481,7 +488,8 @@ public final class BiomePreviewExporter {
                             y,
                             radiusBlocks,
                             sampler,
-                            "SOURCE",
+                            // Context null on purpose: real-terrain mode, not the preview-skip path.
+                            null,
                             gatedNoiseGen,
                             gatedNoiseConfig,
                             gatedHeightView);
@@ -538,6 +546,11 @@ public final class BiomePreviewExporter {
                     }
                 }
 
+                int terrainH = LatitudeBiomes.terrainHeightAt(gatedNoiseGen, gatedNoiseConfig, gatedHeightView, blockX, blockZ);
+                if (terrainH != Integer.MIN_VALUE && heightImage != null) {
+                    heightImage.setRGB(imageX, imageZ, heightRampColor(terrainH, seaLevelBlocks));
+                }
+
                 advanceCursor();
             }
 
@@ -545,6 +558,30 @@ public final class BiomePreviewExporter {
                 finalizeResult();
             }
             return result;
+        }
+
+        private static int heightRampColor(int h, int sea) {
+            int r; int g; int b;
+            if (h <= sea) {
+                double t = Math.max(0.0, Math.min(1.0, (sea - h) / 120.0));
+                r = (int) (90 - 70 * t);
+                g = (int) (150 - 120 * t);
+                b = (int) (230 - 150 * t);
+            } else {
+                double t = Math.max(0.0, Math.min(1.0, (h - sea) / 160.0));
+                if (t < 0.5) {
+                    double u = t / 0.5;
+                    r = (int) (60 + 140 * u);
+                    g = (int) (150 - 10 * u);
+                    b = (int) (70 - 20 * u);
+                } else {
+                    double u = (t - 0.5) / 0.5;
+                    r = (int) (200 + 55 * u);
+                    g = (int) (140 + 115 * u);
+                    b = (int) (50 + 205 * u);
+                }
+            }
+            return (r << 16) | (g << 8) | b;
         }
 
         private void advanceCursor() {
@@ -598,6 +635,14 @@ public final class BiomePreviewExporter {
                         throw new IOException("PNG writer unavailable for biome_ids");
                     }
                     writeBiomePalette(outputDir.resolve("biome_palette.json"), biomeIndices);
+                }
+
+                if (heightImage != null) {
+                    Path heightsPath = outputDir.resolve("heights.png");
+                    boolean wroteHeights = ImageIO.write(heightImage, "png", heightsPath.toFile());
+                    if (!wroteHeights) {
+                        throw new IOException("PNG writer unavailable for heights");
+                    }
                 }
 
                 int inventoryDiscoveryStep = inventoryDiscoveryStep(stepBlocks);

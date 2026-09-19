@@ -196,9 +196,7 @@ public final class LatitudeSeasonBridge {
         return clampLight(Math.max(skyAfterAmbient, storedBlockLight));
     }
 
-    /** LIGHTMAP daylight with a softened sun-angle floor: the raw elevation curve made
-     *  low-sun conditions (morning/evening, polar day) render dim all day. Day keeps a
-     *  0.72 floor scaled by the twilight ramp; nights stay astronomical (moon-only). */
+    /** LIGHTMAP daylight with the angle-graded day factor; nights stay astronomical. */
     public static float localSkyBrightness(World world, BlockPos pos) {
         if (!isLatitudeWorld(world)) {
             return 1.0f;
@@ -206,11 +204,12 @@ public final class LatitudeSeasonBridge {
         LatitudeCalendarMath.SolarPosition solar = at(world, pos).solar();
         double elevationDegrees = Math.toDegrees(solar.solarElevationRadians());
         double raw = solar.skyLightFactor();
+        double day = dayLightFactor(solar);
         if (solar.polarDay() || elevationDegrees >= 0.0) {
-            return (float) Math.max(0.0, Math.min(1.0, Math.max(raw, 0.72)));
+            return (float) Math.max(0.0, Math.min(1.0, Math.max(raw, day)));
         }
         double dusk = Math.max(0.0, Math.min(1.0, (elevationDegrees + 6.0) / 6.0));
-        return (float) Math.max(0.0, Math.min(1.0, Math.max(raw, 0.72 * dusk)));
+        return (float) Math.max(0.0, Math.min(1.0, Math.max(raw, day * dusk)));
     }
 
     /**
@@ -244,14 +243,21 @@ public final class LatitudeSeasonBridge {
      * renderer may still use the continuous physical factor, but Minecraft's
      * discrete sky-light level must not turn ordinary morning into level 5.
      */
+    /** Angle-graded daylight: full at high sun, ~0.7 under a polar-summer sun, floor 0.55.
+     *  Full brightness at a horizon-hugging polar sun read as unrealistic (too bright). */
+    private static double dayLightFactor(LatitudeCalendarMath.SolarPosition solar) {
+        double s = Math.max(0.0, Math.min(1.0, Math.sin(solar.solarElevationRadians())));
+        return 0.55 + 0.45 * s;
+    }
+
     public static double gameplaySkyLightFactor(LatitudeCalendarMath.SolarPosition solar) {
         double elevationDegrees = Math.toDegrees(solar.solarElevationRadians());
         if (solar.polarDay() || elevationDegrees >= 0.0) {
-            return 1.0;
+            return dayLightFactor(solar);
         }
         double twilight = Math.max(0.0, Math.min(1.0, (elevationDegrees + 6.0) / 6.0));
         double moonContribution = Math.min(0.18, Math.max(0.0, solar.skyLightFactor()));
-        return Math.max(twilight, moonContribution);
+        return Math.max(twilight * dayLightFactor(solar), moonContribution);
     }
 
     /**

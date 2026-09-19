@@ -416,6 +416,15 @@ public final class LatitudeBiomes {
         }
     }
 
+    /** Public terrain-height probe for dev tooling (atlas height maps / terrain views). */
+    public static int terrainHeightAt(NoiseChunkGenerator generator, NoiseConfig noiseConfig,
+                                      HeightLimitView heightView, int blockX, int blockZ) {
+        if (generator == null || noiseConfig == null || heightView == null) {
+            return Integer.MIN_VALUE;
+        }
+        return previewHeight(generator, noiseConfig, heightView, blockX, blockZ);
+    }
+
     private static PreviewTerrain previewTerrain(NoiseChunkGenerator generator, NoiseConfig noiseConfig, HeightLimitView heightView,
                                                  int blockX, int blockZ) {
         if (generator == null || noiseConfig == null || heightView == null) {
@@ -1163,6 +1172,15 @@ public final class LatitudeBiomes {
                 preview = previewTerrain(generator, noiseConfig, heightView, blockX, blockZ);
             }
             int seaLevel = previewSeaLevel(generator);
+            if (hasReliableSurface && preview.centerHeight < seaLevel) {
+                // Symmetric to terrainOverridesOceanBase: the base source says land but the
+                // real terrain is water - route to the band's ocean lanes (frozen at the
+                // poles) instead of painting land biomes (and their features) onto ocean.
+                RegistryEntry<Biome> waterPick = oceanByLatitudeBandOrBase(biomeRegistry, base, blockX, blockZ, landBandIndex);
+                RegistryEntry<Biome> out = mushroomIslandOverride(biomeRegistry, waterPick, blockX, blockZ);
+                debugPick(blockX, blockZ, effectiveRadius, t, band, base, out, false, false, null);
+                return out;
+            }
             boolean previewHeightHigh = preview.centerHeight >= (seaLevel + PREVIEW_HEIGHT_MARGIN_BLOCKS);
             boolean previewRuggedHigh = preview.robustDelta >= WINDSWEPT_RUGGED_THRESH;
             boolean previewHeightModerate = preview.centerHeight >= (seaLevel + PREVIEW_HEIGHT_MARGIN_BLOCKS / 2);
@@ -1454,6 +1472,15 @@ public final class LatitudeBiomes {
             preview = previewTerrain(generator, noiseConfig, heightView, blockX, blockZ);
         }
         int seaLevel = previewSeaLevel(generator);
+        if (hasReliableSurface && preview.centerHeight < seaLevel) {
+            // Symmetric to terrainOverridesOceanBase: the base source says land but the
+            // real terrain is water - route to the band's ocean lanes (frozen at the
+            // poles) instead of painting land biomes (and their features) onto ocean.
+            RegistryEntry<Biome> waterPick = oceanByLatitudeBandOrBase(biomePool, base, blockX, blockZ, landBandIndex);
+            RegistryEntry<Biome> out = mushroomIslandOverride(biomePool, waterPick, blockX, blockZ);
+            debugPick(blockX, blockZ, effectiveRadius, t, band, base, out, false, false, null);
+            return out;
+        }
         boolean previewHeightHigh = preview.centerHeight >= (seaLevel + PREVIEW_HEIGHT_MARGIN_BLOCKS);
         boolean previewRuggedHigh = preview.robustDelta >= WINDSWEPT_RUGGED_THRESH;
         boolean previewHeightModerate = preview.centerHeight >= (seaLevel + PREVIEW_HEIGHT_MARGIN_BLOCKS / 2);
