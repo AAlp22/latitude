@@ -823,8 +823,9 @@ public final class LatitudeBiomes {
     // Wavelength of the within-pool biome-index field (idx = floor(noise * poolSize)): the run
     // per pool member along the gradient is roughly POOL_INDEX_SCALE_BLOCKS / poolSize. 2048
     // produced ~100-block single-biome beads inside every pool (the "biomes per chunk" symptom);
-    // 8192 puts pool members at a few hundred blocks. Override with -Dlatitude.poolIndexScaleBlocks.
-    private static final int POOL_INDEX_SCALE_BLOCKS = Integer.getInteger("latitude.poolIndexScaleBlocks", 8192);
+    // 4096 keeps pool members at a few hundred blocks; 8192 stretched stretches to km-scale single
+    // biomes. Override with -Dlatitude.poolIndexScaleBlocks.
+    private static final int POOL_INDEX_SCALE_BLOCKS = Integer.getInteger("latitude.poolIndexScaleBlocks", 4096);
     private static final int BLEND_TRANSITION_WIDTH_BLOCKS = 1408;
     private static final int BLEND_DITHER_SCALE_BLOCKS = 512;
     private static final int BLEND_NOISE_PATCH_CHUNKS = 10;
