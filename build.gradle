@@ -33,6 +33,7 @@ loom {
             vmArg "-Dlatitude.variantCellBlocks=${System.getProperty('latitude.variantCellBlocks', '384')}"
             vmArg "-Dlatitude.poolIndexScaleBlocks=${System.getProperty('latitude.poolIndexScaleBlocks', '4096')}"
             vmArg "-Dlatitude.atlas.inventoryStep=${System.getProperty('latitude.atlas.inventoryStep', '32')}"
+            vmArg "-Dlatitude.emitHeight=${System.getProperty('latitude.emitHeight', 'false')}"
             vmArg "-Dlatitude.debugPickReturnsBase=${System.getProperty('latitude.debugPickReturnsBase', 'false')}"
         }
         biomeSeedSearch {

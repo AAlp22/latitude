@@ -398,6 +398,24 @@ public final class LatitudeBiomes {
                 incoming, selected, reason);
     }
 
+    // The vanilla base source's y=64 ocean edge overshoots onto real land around coasts and
+    // small islands (base says ocean while the surface is a grass island with no features).
+    // When a real terrain preview is available and the column's surface sits clearly above
+    // sea level, the land path should win instead of the ocean lanes.
+    private static boolean terrainOverridesOceanBase(NoiseChunkGenerator generator, NoiseConfig noiseConfig,
+                                                     HeightLimitView heightView, String callerContext,
+                                                     int blockX, int blockZ) {
+        if (generator == null || noiseConfig == null || heightView == null || shouldSkipPreviewTerrain(callerContext)) {
+            return false;
+        }
+        try {
+            int centerHeight = previewHeight(generator, noiseConfig, heightView, blockX & ~3, blockZ & ~3);
+            return centerHeight >= previewSeaLevel(generator) + OCEAN_LAND_MARGIN_BLOCKS;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     private static PreviewTerrain previewTerrain(NoiseChunkGenerator generator, NoiseConfig noiseConfig, HeightLimitView heightView,
                                                  int blockX, int blockZ) {
         if (generator == null || noiseConfig == null || heightView == null) {
@@ -895,6 +913,9 @@ public final class LatitudeBiomes {
     private static final int WINDSWEPT_RUGGED_THRESH = 8;
     private static final int WINDSWEPT_RUGGED_HYST = 2;
     private static final int PREVIEW_HEIGHT_MARGIN_BLOCKS = 25;
+    // Clearance above sea level for the ocean branch to yield to the land path; small on
+    // purpose so low grass islands are caught, well below PREVIEW_HEIGHT_MARGIN_BLOCKS.
+    private static final int OCEAN_LAND_MARGIN_BLOCKS = 4;
 
     private static final ThreadLocal<Long2IntOpenHashMap> PREVIEW_HEIGHT_CACHE =
             ThreadLocal.withInitial(Long2IntOpenHashMap::new);
@@ -1113,7 +1134,7 @@ public final class LatitudeBiomes {
                 }
             }
 
-            if (base.isIn(BiomeTags.IS_OCEAN)) {
+            if (base.isIn(BiomeTags.IS_OCEAN) && !terrainOverridesOceanBase(generator, noiseConfig, heightView, callerContext, blockX, blockZ)) {
                 RegistryEntry<Biome> oceanPick = oceanByLatitudeBandOrBase(biomeRegistry, base, blockX, blockZ, bandIndex);
                 RegistryEntry<Biome> out = mushroomIslandOverride(biomeRegistry, oceanPick, blockX, blockZ);
                 debugPick(blockX, blockZ, effectiveRadius, t, band, base, out, false, false, null);
@@ -1411,7 +1432,7 @@ public final class LatitudeBiomes {
             return out;
         }
 
-        if (base.isIn(BiomeTags.IS_OCEAN)) {
+        if (base.isIn(BiomeTags.IS_OCEAN) && !terrainOverridesOceanBase(generator, noiseConfig, heightView, callerContext, blockX, blockZ)) {
             RegistryEntry<Biome> oceanPick = oceanByLatitudeBandOrBase(biomePool, base, blockX, blockZ, bandIndex);
             RegistryEntry<Biome> out = mushroomIslandOverride(biomePool, oceanPick, blockX, blockZ);
             debugPick(blockX, blockZ, effectiveRadius, t, band, base, out, false, false, null);
