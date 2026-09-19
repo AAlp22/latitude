@@ -196,11 +196,21 @@ public final class LatitudeSeasonBridge {
         return clampLight(Math.max(skyAfterAmbient, storedBlockLight));
     }
 
+    /** LIGHTMAP daylight with a softened sun-angle floor: the raw elevation curve made
+     *  low-sun conditions (morning/evening, polar day) render dim all day. Day keeps a
+     *  0.72 floor scaled by the twilight ramp; nights stay astronomical (moon-only). */
     public static float localSkyBrightness(World world, BlockPos pos) {
         if (!isLatitudeWorld(world)) {
             return 1.0f;
         }
-        return (float) Math.max(0.0, Math.min(1.0, at(world, pos).solar().skyLightFactor()));
+        LatitudeCalendarMath.SolarPosition solar = at(world, pos).solar();
+        double elevationDegrees = Math.toDegrees(solar.solarElevationRadians());
+        double raw = solar.skyLightFactor();
+        if (solar.polarDay() || elevationDegrees >= 0.0) {
+            return (float) Math.max(0.0, Math.min(1.0, Math.max(raw, 0.72)));
+        }
+        double dusk = Math.max(0.0, Math.min(1.0, (elevationDegrees + 6.0) / 6.0));
+        return (float) Math.max(0.0, Math.min(1.0, Math.max(raw, 0.72 * dusk)));
     }
 
     /**
@@ -222,7 +232,11 @@ public final class LatitudeSeasonBridge {
 
         double directSunFactor = Math.max(0.0, Math.min(1.0,
                 (Math.sin(solar.solarElevationRadians()) + 0.08) / 1.08));
-        return Math.max(0.0, Math.min(1.0, Math.pow(directSunFactor, 0.75)));
+        // Eased curve (was pow 0.75 → sky fell to ~0.14 at sunrise-level sun and stayed
+        // dusky all day at high latitudes) plus a twilight-scaled floor.
+        double shaped = Math.pow(directSunFactor, 0.4);
+        double dusk = Math.max(0.0, Math.min(1.0, (elevationDegrees + 6.0) / 6.0));
+        return Math.max(0.0, Math.min(1.0, Math.max(shaped, 0.62 * dusk)));
     }
 
     /**
@@ -230,10 +244,6 @@ public final class LatitudeSeasonBridge {
      * renderer may still use the continuous physical factor, but Minecraft's
      * discrete sky-light level must not turn ordinary morning into level 5.
      */
-    /** Night floor: never darker than roughly vanilla night (level ~4), so moonless
-     *  astronomical nights stop reaching pitch black; moon phases still brighten above it. */
-    private static final double NIGHT_LIGHT_FLOOR = 0.27;
-
     public static double gameplaySkyLightFactor(LatitudeCalendarMath.SolarPosition solar) {
         double elevationDegrees = Math.toDegrees(solar.solarElevationRadians());
         if (solar.polarDay() || elevationDegrees >= 0.0) {
@@ -241,7 +251,7 @@ public final class LatitudeSeasonBridge {
         }
         double twilight = Math.max(0.0, Math.min(1.0, (elevationDegrees + 6.0) / 6.0));
         double moonContribution = Math.min(0.18, Math.max(0.0, solar.skyLightFactor()));
-        return Math.max(NIGHT_LIGHT_FLOOR, Math.max(twilight, moonContribution));
+        return Math.max(twilight, moonContribution);
     }
 
     /**
