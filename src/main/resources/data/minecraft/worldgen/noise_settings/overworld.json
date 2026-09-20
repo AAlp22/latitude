@@ -12,8 +12,8 @@
   "disable_mob_generation": false,
   "legacy_random_source": false,
   "noise": {
-    "min_y": -64,
     "height": 384,
+    "min_y": -64,
     "size_horizontal": 1,
     "size_vertical": 2
   },
@@ -116,80 +116,6 @@
         "then_run": {
           "type": "minecraft:sequence",
           "sequence": [
-            {
-              "type": "minecraft:condition",
-              "if_true": {
-                "type": "minecraft:biome",
-                "biome_is": [
-                  "wythers:glacial_cliffs",
-                  "wythers:ice_cap",
-                  "wythers:icy_crags",
-                  "wythers:icy_shore",
-                  "wythers:icy_volcano",
-                  "wythers:snowy_canyon",
-                  "wythers:snowy_peaks"
-                ]
-              },
-              "then_run": {
-                "type": "minecraft:sequence",
-                "sequence": [
-                  {
-                    "type": "minecraft:block",
-                    "result_state": {
-                      "Name": "minecraft:snow_block"
-                    }
-                  },
-                  {
-                    "type": "minecraft:block",
-                    "result_state": {
-                      "Name": "minecraft:packed_ice"
-                    }
-                  },
-                  {
-                    "type": "minecraft:block",
-                    "result_state": {
-                      "Name": "minecraft:stone"
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "type": "minecraft:condition",
-              "if_true": {
-                "type": "minecraft:biome",
-                "biome_is": [
-                  "wythers:deep_snowy_taiga",
-                  "wythers:snowy_bog",
-                  "wythers:snowy_fen",
-                  "wythers:snowy_thermal_taiga",
-                  "wythers:snowy_tundra"
-                ]
-              },
-              "then_run": {
-                "type": "minecraft:sequence",
-                "sequence": [
-                  {
-                    "type": "minecraft:block",
-                    "result_state": {
-                      "Name": "minecraft:snow_block"
-                    }
-                  },
-                  {
-                    "type": "minecraft:block",
-                    "result_state": {
-                      "Name": "minecraft:dirt"
-                    }
-                  },
-                  {
-                    "type": "minecraft:block",
-                    "result_state": {
-                      "Name": "minecraft:stone"
-                    }
-                  }
-                ]
-              }
-            },
             {
               "type": "minecraft:condition",
               "if_true": {
@@ -437,9 +363,26 @@
                           "type": "minecraft:condition",
                           "if_true": {
                             "type": "minecraft:y_above",
+                            "add_stone_depth": false,
+                            "anchor": {
+                              "absolute": 256
+                            },
+                            "surface_depth_multiplier": 0
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": {
+                              "Name": "minecraft:orange_terracotta"
+                            }
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:y_above",
                             "add_stone_depth": true,
                             "anchor": {
-                              "absolute": 84
+                              "absolute": 74
                             },
                             "surface_depth_multiplier": 1
                           },

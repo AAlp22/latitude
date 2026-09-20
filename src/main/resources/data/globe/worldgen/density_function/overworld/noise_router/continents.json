@@ -1,5 +1,7 @@
 {
-  "type": "minecraft:add",
-  "argument1": "globe:noise/full_continents",
-  "argument2": 0
+  "type": "globe:latitude_bias",
+  "input": "globe:noise/full_continents",
+  "amplitude": 0.3,
+  "start": 0.74,
+  "end": 0.94
 }

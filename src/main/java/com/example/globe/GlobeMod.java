@@ -2,6 +2,7 @@ package com.example.globe;
 
 import net.fabricmc.api.ModInitializer;
 import com.example.globe.world.LatitudeBiomes;
+import com.example.globe.world.LatitudeBiasDensityFunction;
 import com.example.globe.world.LatitudeWorldState;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -10,6 +11,8 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -83,6 +86,11 @@ public class GlobeMod implements ModInitializer {
         LOGGER.info("{} initialized. Use the globe:globe_regular world preset for deterministic terrain.", MOD_ID);
 
         logBuildMetadata("server");
+
+        // Custom density-function type: latitude bias for the guaranteed polar land caps.
+        Registry.register(Registries.DENSITY_FUNCTION_TYPE,
+                Identifier.of(MOD_ID, "latitude_bias"),
+                LatitudeBiasDensityFunction.CODEC);
 
         GlobeNet.registerPayloads();
 

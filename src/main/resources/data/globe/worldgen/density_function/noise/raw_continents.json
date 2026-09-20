@@ -4,7 +4,13 @@
     "type": "minecraft:clamp",
     "input": {
       "type": "minecraft:add",
-      "argument1": "globe:__constants/ocean_offset",
+      "argument1": {
+        "type": "globe:latitude_bias",
+        "input": "globe:__constants/ocean_offset",
+        "amplitude": 0.5,
+        "start": 0.72,
+        "end": 0.94
+      },
       "argument2": {
         "type": "minecraft:spline",
         "spline": {
@@ -19,12 +25,17 @@
               "derivative": 0
             },
             {
-              "location": 0.58,
+              "location": 0.5,
+              "value": 0.02,
+              "derivative": 0
+            },
+            {
+              "location": 0.62,
               "value": 0.575,
               "derivative": 1
             },
             {
-              "location": 0.66,
+              "location": 0.72,
               "value": 0.68,
               "derivative": 1
             }
