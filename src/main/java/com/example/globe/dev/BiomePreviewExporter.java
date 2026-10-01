@@ -420,8 +420,22 @@ public final class BiomePreviewExporter {
                     ? latitudeSource.original()
                     : biomeSource;
             this.biomeRegistry = world.getRegistryManager().get(RegistryKeys.BIOME);
+
+            // Explicit preview settings: headless renders must evaluate the intended config even when the
+            // dev world's generator keeps a different (shadowed) settings entry. Defaults to the globe
+            // preset the user's worlds run; override with -Dlatitude.preview.settings=<id>.
+            String previewSettingsId = System.getProperty("latitude.preview.settings", "globe:overworld_regular");
+            net.minecraft.world.gen.chunk.ChunkGeneratorSettings previewSettings = null;
+            var settingsRegistry = world.getRegistryManager().getOptional(RegistryKeys.CHUNK_GENERATOR_SETTINGS);
+            if (settingsRegistry.isPresent()) {
+                previewSettings = settingsRegistry.get().get(new net.minecraft.util.Identifier(previewSettingsId));
+            }
+            if (previewSettings == null && this.generator instanceof net.minecraft.world.gen.chunk.NoiseChunkGenerator fallbackGen) {
+                previewSettings = fallbackGen.getSettings().value();
+                com.example.globe.GlobeMod.LOGGER.warn("[latdev] preview settings '{}' missing; using world generator settings", previewSettingsId);
+            }
             this.noiseConfig = NoiseConfig.create(
-                    ((net.minecraft.world.gen.chunk.NoiseChunkGenerator) this.generator).getSettings().value(),
+                    previewSettings,
                     world.getRegistryManager().getOptionalWrapper(RegistryKeys.NOISE_PARAMETERS).orElseThrow(),
                     atlasSeed);
             this.sampler = noiseConfig.getMultiNoiseSampler();
@@ -433,8 +447,68 @@ public final class BiomePreviewExporter {
             this.noiseY = Math.floorDiv(y, 4);
 
             this.heightImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-            if (generator instanceof net.minecraft.world.gen.chunk.NoiseChunkGenerator seaGen) {
+            if (previewSettings != null) {
+                this.seaLevelBlocks = previewSettings.seaLevel();
+            } else if (generator instanceof net.minecraft.world.gen.chunk.NoiseChunkGenerator seaGen) {
                 this.seaLevelBlocks = seaGen.getSeaLevel();
+            }
+
+            // [latdev][probe] temporary one-shot diagnostics for the live settings/density chain.
+            try {
+                net.minecraft.world.gen.densityfunction.DensityFunction.NoisePos posA =
+                        new net.minecraft.world.gen.densityfunction.DensityFunction.NoisePos() {
+                            @Override public int blockX() { return 5000; }
+                            @Override public int blockY() { return 64; }
+                            @Override public int blockZ() { return 5000; }
+                            @Override public net.minecraft.world.gen.chunk.Blender getBlender() { return null; }
+                        };
+                net.minecraft.world.gen.densityfunction.DensityFunction.NoisePos posB =
+                        new net.minecraft.world.gen.densityfunction.DensityFunction.NoisePos() {
+                            @Override public int blockX() { return -20000; }
+                            @Override public int blockY() { return 64; }
+                            @Override public int blockZ() { return 10000; }
+                            @Override public net.minecraft.world.gen.chunk.Blender getBlender() { return null; }
+                        };
+                net.minecraft.world.gen.densityfunction.DensityFunction.NoisePos posC =
+                        new net.minecraft.world.gen.densityfunction.DensityFunction.NoisePos() {
+                            @Override public int blockX() { return 0; }
+                            @Override public int blockY() { return 64; }
+                            @Override public int blockZ() { return 90000; }
+                            @Override public net.minecraft.world.gen.chunk.Blender getBlender() { return null; }
+                        };
+                String worldSettingsKey = noiseGen == null ? "<non-noise-generator>"
+                        : noiseGen.getSettings().getKey().map(Object::toString).orElse("<unregistered>");
+                com.example.globe.GlobeMod.LOGGER.info("[latdev][probe] previewSettings={} worldSettings={} worldSea={} previewSea={} routerContinentsClass={} routerContinents@A={}",
+                        previewSettingsId,
+                        worldSettingsKey,
+                        noiseGen == null ? -999 : noiseGen.getSeaLevel(),
+                        seaLevelBlocks,
+                        noiseConfig.getNoiseRouter().continents().getClass().getName(),
+                        noiseConfig.getNoiseRouter().continents().sample(posA));
+                var dfReg = world.getRegistryManager().getOptional(RegistryKeys.DENSITY_FUNCTION);
+                if (dfReg.isPresent()) {
+                    var rawDf = dfReg.get().get(new net.minecraft.util.Identifier("globe", "noise/raw_continents"));
+                    if (rawDf == null) {
+                        com.example.globe.GlobeMod.LOGGER.info("[latdev][probe] globe:noise/raw_continents MISSING from registry");
+                    } else {
+                        com.example.globe.GlobeMod.LOGGER.info("[latdev][probe] raw_continents A={} B={} C(polar)={}",
+                                rawDf.sample(posA), rawDf.sample(posB), rawDf.sample(posC));
+                    }
+                } else {
+                    com.example.globe.GlobeMod.LOGGER.info("[latdev][probe] DF registry absent");
+                }
+                if (settingsRegistry.isPresent()) {
+                    StringBuilder seas = new StringBuilder();
+                    for (net.minecraft.util.Identifier id : settingsRegistry.get().getIds()) {
+                        if (id.getNamespace().equals("globe") || id.getPath().contains("overworld")) {
+                            var entrySettings = settingsRegistry.get().get(id);
+                            seas.append(id).append('=').append(entrySettings == null ? "?" : entrySettings.seaLevel()).append("  ");
+                        }
+                    }
+                    com.example.globe.GlobeMod.LOGGER.info("[latdev][probe] registry settings seas: {}", seas);
+                }
+            } catch (Throwable probeError) {
+                com.example.globe.GlobeMod.LOGGER.warn("[latdev][probe] probe failed: {}", probeError.toString());
             }
 
             for (Layer layer : layers) {

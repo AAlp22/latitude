@@ -9,6 +9,10 @@
       "from_value": 17,
       "to_value": -15
     },
-    "argument2": "globe:terrain_spline/offset/continents"
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": 1.5,
+      "argument2": "globe:terrain_spline/offset/continents"
+    }
   }
 }
