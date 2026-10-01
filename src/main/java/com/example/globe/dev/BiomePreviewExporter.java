@@ -446,6 +446,11 @@ public final class BiomePreviewExporter {
             this.gatedHeightView = world;
             this.noiseY = Math.floorDiv(y, 4);
 
+            // The globe:latitude_bias density function reads ACTIVE_RADIUS_BLOCKS for its |z| weight.
+            // The headless server never runs the world-border sync that normally sets it, so pin it to
+            // the preview radius here or every polar effect is silently weight-zero in renders.
+            LatitudeBiomes.setActiveRadiusBlocks(radiusBlocks);
+
             this.heightImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
             if (previewSettings != null) {
                 this.seaLevelBlocks = previewSettings.seaLevel();
