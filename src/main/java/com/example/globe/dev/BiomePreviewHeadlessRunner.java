@@ -703,7 +703,7 @@ public final class BiomePreviewHeadlessRunner {
             if (parsed == null) {
                 continue;
             }
-            deduped.add(MathHelper.clamp(parsed, 8, 512));
+            deduped.add(MathHelper.clamp(parsed, 8, 4096));
         }
         return new ArrayList<>(deduped);
     }

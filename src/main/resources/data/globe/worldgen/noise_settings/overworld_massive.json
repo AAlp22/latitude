@@ -35,7 +35,7 @@
     "vein_toggle": "globe:overworld/noise_router/vein_toggle"
   },
   "ore_veins_enabled": true,
-  "sea_level": 76,
+  "sea_level": 212,
   "spawn_target": [
     {
       "continentalness": [
